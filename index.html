@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>وصل حسابات</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js" type="module"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <style>
+        /* أنماط التصميم الأصلية لصفحة الوصل */
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            text-align: center;
+            color: #333;
+            direction: rtl;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        #editableTitle {
+            font-size: 22px;
+            font-weight: bold;
+            cursor: text;
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #date {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: right;
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f1f3f4;
+            font-weight: bold;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .total-row {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        input {
+            width: 90%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        .add-icon {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #007bff;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .add-icon:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+
+        th:nth-child(1), td:nth-child(1) { width: 4%; }
+        th:nth-child(2), td:nth-child(2) { width: 55%; }
+        th:nth-child(3), td:nth-child(3) { width: 18%; }
+        th:nth-child(4), td:nth-child(4) { width: 13%; }
+        th:nth-child(5), td:nth-child(5) { width: 10%; }
+
+        td:nth-child(5), th:nth-child(5) {
+            text-align: right !important;
+            padding-right: 15px;
+        }
+
+        td:nth-child(2) input {
+            width: 95%;
+            padding: 8px;
+        }
+
+        td:nth-child(4) input {
+            width: 70%;
+            padding: 6px;
+        }
+
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            font-family: 'Tajawal', sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            color: #333;
+            width: 80px;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+            background: #f1f3f4;
+        }
+
+        #grandTotal {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        #grandTotal::before {
+            content: "IQD ";
+            font-size: 14px;
+            color: #555;
+            margin-left: 5px;
+        }
+
+        #saveConfirmation {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid #28a745;
+            font-size: 14px;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        /* أنماط رسائل التأكيد */
+        .confirmation-message {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            display: none;
+        }
+
+        /* رسالة النجاح */
+        #uploadSuccess {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 2px solid #28a745;
+        }
+
+        /* رسالة الفشل */
+        #uploadFailure {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border: 2px solid #ffc107;
+        }
+
+        /* أنماط الواجهة الرئيسية والمخزن */
+        .main-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .store-page {
+            display: none;
+            padding: 20px;
+        }
+
+        .backup-page {
+            display: none;
+            padding: 20px;
+        }
+
+        .main-button {
+            font-size: 18px;
+            padding: 15px 30px;
+            margin: 10px;
+            text-align: center; /* توسيط النص أفقيًا */
+            width: 200px; /* عرض محدد للأزرار */
+            display: flex; /* استخدام flexbox */
+            align-items: center; /* توسيط النص عموديًا */
+            justify-content: center; /* توسيط النص أفقيًا */
+        }
+
+        .no-data {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .receipt-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .receipt-item {
+            background: #fff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .receipt-item:hover {
+            background: #f1f3f4;
+        }
+    </style>
+</head>
+<body>
+
+<!-- الواجهة الرئيسية -->
+<div class="main-page" id="mainPage">
+    <h1>نظام إدارة الفواتير والمخزن</h1>
+    <p>مرحبًا! يمكنك إصدار فواتير جديدة، أو عرض الفواتير المحفوظة، أو إدارة النسخ الاحتياطية.</p>
+    
+    <div class="main-buttons">
+        <button class="action-btn main-button" onclick="showPage('receiptPage')">إصدار وصل</button>
+        <button class="action-btn main-button" onclick="showPage('storePage')">المخزن</button>
+        <button class="action-btn main-button" onclick="showPage('backupPage')">النسخ الاحتياطي</button>
+    </div>
+</div>
+
+<!-- صفحة إصدار الوصل -->
+<div id="receiptPage" style="display: none;">
+    <h2 id="editableTitle" contenteditable="true">وصل حسابات</h2>
+    <p id="date"></p>
+
+    <table id="accountsTable">
+        <thead>
+            <tr>
+                <th>ت</th>
+                <th>المادة</th>
+                <th>السعر</th>
+                <th>الكمية</th>
+                <th>$</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td><input type="text" class="item"></td>
+                <td><input type="number" class="price" oninput="calculateTotal(this)"></td>
+                <td><input type="number" class="quantity" oninput="calculateTotal(this)"></td>
+                <td><span class="total">0</span></td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="4" style="text-align: right;">المجموع</td>
+                <td><span id="grandTotal">0</span></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="buttons-container">
+        <button class="action-btn" onclick="saveData()">حفظ</button>
+        <button class="action-btn" onclick="deleteReceipt()">حذف</button>
+        <button class="action-btn" onclick="printReceipt()">طباعة</button>
+    </div>
+
+    <div class="add-icon" onclick="addRow()">
+        <ion-icon name="add-outline"></ion-icon>
+    </div>
+
+    <div id="saveConfirmation">تم الحفظ بنجاح!</div>
+</div>
+
+<!-- صفحة المخزن -->
+<div class="store-page" id="storePage">
+    <h1>المخزن</h1>
+    <button class="action-btn" onclick="refreshPage()">العودة</button>
+    <ul class="receipt-list" id="receiptList"></ul>
+</div>
+
+<!-- صفحة النسخ الاحتياطي -->
+<div class="backup-page" id="backupPage">
+    <h1>النسخ الاحتياطي</h1>
+    <button class="action-btn" onclick="refreshPage()">العودة</button>
+    <div class="buttons-container">
+        <button class="action-btn" onclick="downloadBackup()">تنزيل النسخة الاحتياطية</button>
+        <input type="file" id="uploadBackup" accept=".json" style="display: none;" onchange="uploadBackup(event)">
+        <button class="action-btn" onclick="document.getElementById('uploadBackup').click()">رفع النسخة الاحتياطية</button>
+    </div>
+
+    <!-- رسالة نجاح الرفع -->
+    <div id="uploadSuccess" class="confirmation-message" style="display: none;">
+        تم رفع النسخة الاحتياطية بنجاح!
+    </div>
+
+    <!-- رسالة فشل الرفع -->
+    <div id="uploadFailure" class="confirmation-message" style="display: none;">
+        فشل في رفع النسخة الاحتياطية! يرجى التحقق من الملف.
+    </div>
+</div>
+
+<script>
+    let rowCount = 1;
+    let currentReceiptIndex = -1; // متغير لتتبع الفهرس الحالي
+
+    // تبديل الصفحات
+    function showPage(pageId) {
+        document.getElementById('mainPage').style.display = 'none';
+        document.getElementById('receiptPage').style.display = 'none';
+        document.getElementById('storePage').style.display = 'none';
+        document.getElementById('backupPage').style.display = 'none';
+        document.getElementById(pageId).style.display = 'block';
+
+        if (pageId === 'storePage') loadStoreData();
+    }
+
+    // تحميل بيانات المخزن
+    function loadStoreData() {
+        const receipts = JSON.parse(localStorage.getItem("receipts")) || [];
+        const receiptList = document.getElementById("receiptList");
+        receiptList.innerHTML = "";
+
+        if (receipts.length === 0) {
+            receiptList.innerHTML = `<p class="no-data">لا توجد وصلات محفوظة</p>`;
+            return;
+        }
+
+        receipts.forEach((receipt, index) => {
+            const li = document.createElement("li");
+            li.className = "receipt-item";
+            li.innerHTML = `
+                <strong>${receipt.title}</strong> - ${receipt.date}
+            `;
+            li.onclick = () => loadReceipt(index);
+            receiptList.appendChild(li);
+        });
+    }
+
+    // تحميل وصل محدد
+    function loadReceipt(index) {
+        const receipts = JSON.parse(localStorage.getItem("receipts")) || [];
+        const receipt = receipts[index];
+        currentReceiptIndex = index; // حفظ الفهرس الحالي
+        
+        document.getElementById("editableTitle").textContent = receipt.title;
+        const tbody = document.getElementById("accountsTable").getElementsByTagName('tbody')[0];
+        
+        tbody.innerHTML = '';
+        rowCount = 0;
+        
+        receipt.rows.forEach(rowData => {
+            rowCount++;
+            const newRow = tbody.insertRow();
+            newRow.innerHTML = `
+                <td>${rowCount}</td>
+                <td><input type="text" class="item" value="${rowData.item}"></td>
+                <td><input type="number" class="price" value="${rowData.price}" oninput="calculateTotal(this)"></td>
+                <td><input type="number" class="quantity" value="${rowData.quantity}" oninput="calculateTotal(this)"></td>
+                <td><span class="total">${rowData.total}</span></td>
+            `;
+        });
+        
+        document.getElementById("grandTotal").textContent = receipt.grandTotal;
+        updateGrandTotal();
+        showPage('receiptPage');
+    }
+
+    // إضافة صف جديد
+    function addRow() {
+        rowCount++;
+        const table = document.getElementById("accountsTable").getElementsByTagName('tbody')[0];
+        const newRow = table.insertRow();
+        newRow.innerHTML = `
+            <td>${rowCount}</td>
+            <td><input type="text" class="item"></td>
+            <td><input type="number" class="price" oninput="calculateTotal(this)"></td>
+            <td><input type="number" class="quantity" oninput="calculateTotal(this)"></td>
+            <td><span class="total">0</span></td>
+        `;
+    }
+
+    // حساب المجموع
+    function calculateTotal(input) {
+        const row = input.parentElement.parentElement;
+        const price = parseFloat(row.querySelector('.price').value) || 0;
+        const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+        const total = price * quantity;
+        
+        // إخفاء الأصفار العشرية في الخلايا الفردية
+        row.querySelector('.total').textContent = total % 1 === 0 ? total.toFixed(0) : total.toFixed(2);
+        
+        updateGrandTotal();
+    }
+
+    // تحديث المجموع الكلي
+    function updateGrandTotal() {
+        const totals = document.querySelectorAll('.total');
+        let grandTotal = 0;
+        totals.forEach(total => grandTotal += parseFloat(total.textContent) || 0);
+        
+        // إظهار الأصفار العشرية في المجموع الكلي
+        document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
+    }
+
+    // حفظ الوصل
+    function saveData() {
+        const receipts = JSON.parse(localStorage.getItem("receipts")) || [];
+        const rows = [];
+        
+        document.querySelectorAll('#accountsTable tbody tr').forEach(row => {
+            const item = row.querySelector('.item').value;
+            const price = row.querySelector('.price').value;
+            const quantity = row.querySelector('.quantity').value;
+            const total = row.querySelector('.total').textContent;
+            
+            rows.push({
+                item: item,
+                price: price,
+                quantity: quantity,
+                total: total
+            });
+        });
+
+        const receipt = {
+            title: document.getElementById("editableTitle").textContent,
+            date: new Date().toLocaleDateString('ar-EG'),
+            rows: rows,
+            grandTotal: document.getElementById('grandTotal').textContent
+        };
+        
+        if (currentReceiptIndex === -1) {
+            receipts.push(receipt); // إضافة وصل جديد
+        } else {
+            receipts[currentReceiptIndex] = receipt; // تحديث الوصل الحالي
+        }
+        
+        localStorage.setItem("receipts", JSON.stringify(receipts));
+
+        const confirmation = document.getElementById("saveConfirmation");
+        confirmation.style.display = "block";
+        setTimeout(() => confirmation.style.display = "none", 3000);
+    }
+
+    // حذف الوصل (تم التعديل)
+    function deleteReceipt() {
+        if (currentReceiptIndex === -1) {
+            alert("لم يتم تحميل أي وصل للحذف!");
+            return;
+        }
+
+        const receipts = JSON.parse(localStorage.getItem("receipts")) || [];
+        if (currentReceiptIndex >= receipts.length) return;
+
+        receipts.splice(currentReceiptIndex, 1); // حذف الوصل المحدد
+        localStorage.setItem("receipts", JSON.stringify(receipts));
+        
+        currentReceiptIndex = -1; // إعادة تعيين الفهرس
+        location.reload(); // تحديث الصفحة
+    }
+
+    // طباعة الوصل
+    function printReceipt() {
+        window.print();
+    }
+
+    // تهيئة التاريخ عند التحميل
+    function updateDate() {
+        const today = new Date();
+        document.getElementById('date').textContent = `التاريخ: ${today.toLocaleDateString('ar-EG')}`;
+    }
+
+    // تنزيل النسخة الاحتياطية
+    function downloadBackup() {
+        const receipts = JSON.parse(localStorage.getItem("receipts")) || [];
+        const dataStr = JSON.stringify(receipts, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'backup.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // رفع النسخة الاحتياطية
+    function uploadBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                localStorage.setItem("receipts", JSON.stringify(data));
+                showUploadMessage(true); // إظهار رسالة النجاح
+                loadStoreData();
+            } catch (error) {
+                showUploadMessage(false); // إظهار رسالة الفشل
+            }
+        };
+        reader.onerror = function() {
+            showUploadMessage(false); // إظهار رسالة الفشل
+        };
+        reader.readAsText(file);
+    }
+
+    // إظهار رسالة الرفع (نجاح أو فشل)
+    function showUploadMessage(isSuccess) {
+        const successMessage = document.getElementById("uploadSuccess");
+        const failureMessage = document.getElementById("uploadFailure");
+
+        if (isSuccess) {
+            successMessage.style.display = "block";
+            setTimeout(() => successMessage.style.display = "none", 3000);
+        } else {
+            failureMessage.style.display = "block";
+            setTimeout(() => failureMessage.style.display = "none", 3000);
+        }
+    }
+
+    // دالة لتحديث الصفحة
+    function refreshPage() {
+        location.reload(); // يقوم بتحديث الصفحة بالكامل
+    }
+
+    updateDate();
+</script>
+
+</body>
+</html>
