@@ -162,6 +162,10 @@
             background: #f1f3f4;
         }
 
+        .action-btn.return-btn {
+            color: #e74c3c;
+        }
+
         .confirmation-message {
             position: fixed;
             bottom: 80px;
@@ -260,45 +264,149 @@
         .accounts-container {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-top: 20px;
+            gap: 20px;
+            max-width: 800px;
+            margin: 30px auto;
+        }
+
+        .account-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
         }
 
         .account-item {
-            width: 100%;
-            max-width: 300px;
-            padding: 15px;
-            margin: 10px;
-            border-radius: 8px;
+            flex: 1;
             background: #fff;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
         }
 
-        .account-label {
-            font-weight: bold;
+        .account-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
-        .account-value {
-            text-align: right;
+        .account-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
         }
 
-        .income {
-            background-color: rgba(40, 167, 69, 0.1);
+        .account-item.income::before {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+
+        .account-item.expense::before {
+            background: linear-gradient(90deg, #e74c3c, #fd7e14);
+        }
+
+        .account-item.net::before {
+            background: linear-gradient(90deg, #007bff, #6610f2);
+        }
+
+        .account-icon {
+            font-size: 32px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .income .account-icon {
             color: #28a745;
         }
 
-        .expense {
-            background-color: rgba(255, 0, 0, 0.1);
-            color: #ff0000;
+        .expense .account-icon {
+            color: #e74c3c;
         }
 
-        .net {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: #ffc107;
+        .net .account-icon {
+            color: #007bff;
+        }
+
+        .account-label {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .account-value {
+            display: block;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .income .account-value {
+            color: #28a745;
+        }
+
+        .expense .account-value {
+            color: #e74c3c;
+        }
+
+        .net .account-value {
+            color: #007bff;
+        }
+
+        .account-currency {
+            font-size: 16px;
+            color: #6c757d;
+            margin-right: 5px;
+        }
+
+        .accounts-summary {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #343a40;
+        }
+
+        .summary-chart {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            margin: 15px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .income-bar {
+            position: absolute;
+            height: 100%;
+            background: #28a745;
+            border-radius: 5px 0 0 5px;
+        }
+
+        .expense-bar {
+            position: absolute;
+            height: 100%;
+            background: #e74c3c;
+            border-radius: 0 5px 5px 0;
+            right: 0;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #6c757d;
         }
     </style>
 </head>
@@ -338,7 +446,7 @@
                 <th>المادة</th>
                 <th>السعر</th>
                 <th>الكمية</th>
-                <th>المجموع</th>
+                <th>$</th>
             </tr>
         </thead>
         <tbody>
@@ -415,7 +523,7 @@
 <!-- صفحة المخزن -->
 <div class="store-page" id="storePage">
     <h1>المخزن</h1>
-    <button class="action-btn" onclick="refreshPage()">العودة</button>
+    <button class="action-btn return-btn" onclick="refreshPage()">العودة</button>
     <div class="buttons-container">
         <button class="action-btn" onclick="showPage('incomePage')">وصلات الدخل</button>
         <button class="action-btn" onclick="showPage('expensePage')">وصلات المصروف</button>
@@ -425,33 +533,53 @@
 <!-- صفحة وصلات الدخل -->
 <div class="income-page" id="incomePage">
     <h1>وصلات الدخل</h1>
-    <button class="action-btn" onclick="showPage('storePage')">العودة</button>
+    <button class="action-btn return-btn" onclick="showPage('storePage')">العودة</button>
     <ul class="receipt-list" id="incomeList"></ul>
 </div>
 
 <!-- صفحة وصلات المصروف -->
 <div class="expense-page" id="expensePage">
     <h1>وصلات المصروف</h1>
-    <button class="action-btn" onclick="showPage('storePage')">العودة</button>
+    <button class="action-btn return-btn" onclick="showPage('storePage')">العودة</button>
     <ul class="receipt-list" id="expenseList"></ul>
 </div>
 
 <!-- صفحة الحسابات -->
 <div id="accountsPage" style="display: none;">
     <h1>الحسابات</h1>
-    <button class="action-btn" onclick="refreshPage()">العودة</button>
+    <button class="action-btn return-btn" onclick="refreshPage()">العودة</button>
+    
     <div class="accounts-container">
-        <div class="account-item income">
-            <span class="account-label">الدخل</span>
-            <span class="account-value">0</span>
+        <div class="account-row">
+            <div class="account-item income">
+                <ion-icon name="arrow-down-circle" class="account-icon"></ion-icon>
+                <span class="account-label">الدخل</span>
+                <span class="account-value"><span id="incomeValue">0</span> <span class="account-currency">د.ع</span></span>
+            </div>
+            
+            <div class="account-item expense">
+                <ion-icon name="arrow-up-circle" class="account-icon"></ion-icon>
+                <span class="account-label">المصروف</span>
+                <span class="account-value"><span id="expenseValue">0</span> <span class="account-currency">د.ع</span></span>
+            </div>
         </div>
-        <div class="account-item expense">
-            <span class="account-label">المصروف</span>
-            <span class="account-value">0</span>
-        </div>
+        
         <div class="account-item net">
+            <ion-icon name="wallet" class="account-icon"></ion-icon>
             <span class="account-label">الصافي</span>
-            <span class="account-value">0</span>
+            <span class="account-value"><span id="netValue">0</span> <span class="account-currency">د.ع</span></span>
+        </div>
+        
+        <div class="accounts-summary">
+            <div class="summary-title">ملخص الحسابات</div>
+            <div class="summary-chart">
+                <div class="income-bar" id="incomeBar" style="width: 50%;"></div>
+                <div class="expense-bar" id="expenseBar" style="width: 30%;"></div>
+            </div>
+            <div class="summary-stats">
+                <div>الدخل: <span id="incomePercent">0%</span></div>
+                <div>المصروف: <span id="expensePercent">0%</span></div>
+            </div>
         </div>
     </div>
 </div>
@@ -459,7 +587,7 @@
 <!-- صفحة النسخ الاحتياطي -->
 <div class="backup-page" id="backupPage">
     <h1>النسخ الاحتياطي</h1>
-    <button class="action-btn" onclick="refreshPage()">العودة</button>
+    <button class="action-btn return-btn" onclick="refreshPage()">العودة</button>
     <div class="buttons-container">
         <button class="action-btn" onclick="downloadBackup()">تنزيل النسخة الاحتياطية</button>
         <input type="file" id="uploadBackup" accept=".json" style="display: none;" onchange="uploadBackup(event)">
@@ -575,7 +703,7 @@
                     <td><input type="text" class="item" value="${row.item || ''}"></td>
                     <td><input type="number" class="price" step="0.01" value="${row.price || 0}" oninput="calculateTotal(this, 'expense')"></td>
                     <td><input type="number" class="quantity" value="${row.quantity || 0}" oninput="calculateTotal(this, 'expense')"></td>
-                    <td><span class="total">${(row.total || 0).toFixed(2)}</span></td>
+                    <td><span class="total">${(row.total || 0).toFixed(0)}</span></td>
                 `;
             } else {
                 tr.innerHTML = `
@@ -620,7 +748,7 @@
         if (type === 'expense') {
             const price = parseFloat(row.querySelector('.price').value) || 0;
             const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-            row.querySelector('.total').textContent = (price * quantity).toFixed(2);
+            row.querySelector('.total').textContent = (price * quantity).toFixed(0);
         }
         updateGrandTotal(type);
     }
@@ -742,9 +870,29 @@
 
         const netAmount = totalIncome - totalExpense;
 
-        document.querySelector('.account-item.income .account-value').textContent = totalIncome.toFixed(2);
-        document.querySelector('.account-item.expense .account-value').textContent = totalExpense.toFixed(2);
-        document.querySelector('.account-item.net .account-value').textContent = netAmount.toFixed(2);
+        // تحديث قيم العناصر
+        document.getElementById('incomeValue').textContent = totalIncome.toLocaleString();
+        document.getElementById('expenseValue').textContent = totalExpense.toLocaleString();
+        document.getElementById('netValue').textContent = netAmount.toLocaleString();
+
+        // تحديث الرسم البياني
+        const total = totalIncome + totalExpense;
+        if (total > 0) {
+            const incomePercent = Math.round((totalIncome / total) * 100);
+            const expensePercent = Math.round((totalExpense / total) * 100);
+            
+            document.getElementById('incomeBar').style.width = `${incomePercent}%`;
+            document.getElementById('expenseBar').style.width = `${expensePercent}%`;
+            
+            document.getElementById('incomePercent').textContent = `${incomePercent}%`;
+            document.getElementById('expensePercent').textContent = `${expensePercent}%`;
+        } else {
+            document.getElementById('incomeBar').style.width = '0%';
+            document.getElementById('expenseBar').style.width = '0%';
+            
+            document.getElementById('incomePercent').textContent = '0%';
+            document.getElementById('expensePercent').textContent = '0%';
+        }
     }
 
     // تنزيل النسخة الاحتياطية
