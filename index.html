@@ -408,6 +408,19 @@
             font-size: 14px;
             color: #6c757d;
         }
+
+        #grandTotalExpense, #grandTotalIncome {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        #grandTotalExpense::after, #grandTotalIncome::after {
+            content: " د.ع";
+            font-size: 14px;
+            color: #555;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -460,8 +473,8 @@
         </tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="4" style="text-align: right;">المجموع</td>
-                <td><span id="grandTotalExpense">0</span></td>
+                <td colspan="4" style="text-align: right; padding-right: 15px;">المجموع</td>
+                <td style="text-align: left; padding-left: 15px; white-space: nowrap; overflow: visible;"><span id="grandTotalExpense">0</span></td>
             </tr>
         </tfoot>
     </table>
@@ -501,8 +514,8 @@
         </tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="2" style="text-align: right;">المجموع</td>
-                <td><span id="grandTotalIncome">0</span></td>
+                <td colspan="2" style="text-align: right; padding-right: 15px;">المجموع</td>
+                <td style="text-align: left; padding-left: 15px; white-space: nowrap; overflow: visible;"><span id="grandTotalIncome">0</span></td>
             </tr>
         </tfoot>
     </table>
