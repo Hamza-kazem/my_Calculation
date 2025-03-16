@@ -409,17 +409,57 @@
             color: #6c757d;
         }
 
-        #grandTotalExpense, #grandTotalIncome {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
+        #longPressHint {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
         }
 
-        #grandTotalExpense::after, #grandTotalIncome::after {
-            content: " د.ع";
-            font-size: 14px;
-            color: #555;
-            margin-right: 5px;
+        /* أنماط الطباعة - Print Styles */
+        @media print {
+            /* الحفاظ على الألوان عند الطباعة */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* إخفاء الأزرار عند الطباعة */
+            .buttons-container, 
+            .action-btn, 
+            .add-icon,
+            .return-btn {
+                display: none !important;
+            }
+            
+            /* تحسين مظهر الطباعة */
+            body {
+                background-color: white;
+                margin: 0;
+                padding: 20px;
+            }
+            
+            /* التأكد من ظهور النص بشكل واضح */
+            table, th, td, h2, p, span {
+                color: #000 !important;
+            }
+            
+            /* إظهار المجموع بشكل واضح */
+            .total-row td {
+                font-weight: bold;
+            }
+            
+            /* إظهار العملة (الدينار العراقي) بشكل واضح */
+            .account-currency {
+                color: #000 !important;
+                font-weight: bold;
+            }
         }
     </style>
 </head>
@@ -473,8 +513,8 @@
         </tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="4" style="text-align: right; padding-right: 15px;">المجموع</td>
-                <td style="text-align: left; padding-left: 15px; white-space: nowrap; overflow: visible;"><span id="grandTotalExpense">0</span></td>
+                <td colspan="4" style="text-align: right;">المجموع</td>
+                <td><span id="grandTotalExpense">0</span></td>
             </tr>
         </tfoot>
     </table>
@@ -485,7 +525,7 @@
         <button class="action-btn" onclick="printReceipt('expense')">طباعة</button>
     </div>
 
-    <div class="add-icon" onclick="addRow('expense')">
+    <div class="add-icon" id="addExpenseRow">
         <ion-icon name="add-outline"></ion-icon>
     </div>
 
@@ -514,8 +554,8 @@
         </tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="2" style="text-align: right; padding-right: 15px;">المجموع</td>
-                <td style="text-align: left; padding-left: 15px; white-space: nowrap; overflow: visible;"><span id="grandTotalIncome">0</span></td>
+                <td colspan="2" style="text-align: right;">المجموع</td>
+                <td><span id="grandTotalIncome">0</span></td>
             </tr>
         </tfoot>
     </table>
@@ -526,7 +566,7 @@
         <button class="action-btn" onclick="printReceipt('income')">طباعة</button>
     </div>
 
-    <div class="add-icon" onclick="addRow('income')">
+    <div class="add-icon" id="addIncomeRow">
         <ion-icon name="add-outline"></ion-icon>
     </div>
 
@@ -616,6 +656,10 @@
     <div id="uploadFailure" class="confirmation-message" style="display: none;">
         فشل في رفع النسخة الاحتياطية! يرجى التحقق من الملف.
     </div>
+</div>
+
+<div class="hint" id="longPressHint" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background-color:rgba(0,0,0,0.7); color:white; padding:20px; border-radius:10px; z-index:1000;">
+    اضغط مطولاً لحذف الصف
 </div>
 
 <script>
@@ -752,6 +796,18 @@
                 <td><input type="text" class="service"></td>
                 <td><input type="number" class="price" step="0.01" oninput="calculateTotal(this, '${type}')"></td>
             `;
+        }
+    }
+
+    // حذف الصف الأخير
+    function removeLastRow(type) {
+        const table = document.getElementById(`${type}AccountsTable`).getElementsByTagName('tbody')[0];
+        const rowCount = table.rows.length;
+        
+        // تأكد من وجود صف واحد على الأقل قبل الحذف
+        if (rowCount > 1) {
+            table.deleteRow(rowCount - 1);
+            updateGrandTotal(type);
         }
     }
 
@@ -959,9 +1015,74 @@
         location.reload();
     }
 
-    // تهيئة التواريخ عند التحميل
-    updateDate('expense');
-    updateDate('income');
+    // إعداد ميزة الضغط المطول لحذف الصف
+    function setupLongPressDelete(type) {
+        const addButton = document.getElementById(`add${type.charAt(0).toUpperCase() + type.slice(1)}Row`);
+        let pressTimer;
+        let isLongPress = false;
+        
+        addButton.addEventListener('mousedown', function() {
+            isLongPress = false;
+            pressTimer = setTimeout(function() {
+                isLongPress = true;
+                removeLastRow(type);
+            }, 500); // وقت الانتظار للضغط المطول (500 مللي ثانية)
+        });
+        
+        addButton.addEventListener('mouseup', function() {
+            clearTimeout(pressTimer);
+            if (!isLongPress) {
+                addRow(type);
+            }
+        });
+        
+        addButton.addEventListener('mouseleave', function() {
+            clearTimeout(pressTimer);
+        });
+        
+        // دعم الأجهزة اللمسية
+        addButton.addEventListener('touchstart', function(e) {
+            isLongPress = false;
+            pressTimer = setTimeout(function() {
+                isLongPress = true;
+                removeLastRow(type);
+            }, 500);
+            e.preventDefault();
+        });
+        
+        addButton.addEventListener('touchend', function(e) {
+            clearTimeout(pressTimer);
+            if (!isLongPress) {
+                addRow(type);
+            }
+            e.preventDefault();
+        });
+        
+        addButton.addEventListener('touchcancel', function(e) {
+            clearTimeout(pressTimer);
+            e.preventDefault();
+        });
+    }
+
+    // تهيئة الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        // تهيئة التواريخ
+        updateDate('income');
+        updateDate('expense');
+        
+        // إعداد ميزة الضغط المطول لحذف الصف
+        setupLongPressDelete('income');
+        setupLongPressDelete('expense');
+        
+        // إظهار رسالة الضغط المطول
+        if (!localStorage.getItem("longPressHintShown")) {
+            document.getElementById("longPressHint").style.display = "block";
+            setTimeout(function() {
+                document.getElementById("longPressHint").style.display = "none";
+                localStorage.setItem("longPressHintShown", "true");
+            }, 3000); // Display for 3 seconds
+        }
+    });
 </script>
 
 </body>
