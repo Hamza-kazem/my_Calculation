@@ -1,1089 +1,945 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة الفواتير والمخزن</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js" type="module"></script>
-    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-    <style>
-        /* أنماط التصميم الأصلية لصفحة الوصل */
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+    <title>نظام المحاسبة المتقدم</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Tajawal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Styles -->
+    <style>
         body {
             font-family: 'Tajawal', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f8f9fa;
-            text-align: center;
-            color: #333;
-            direction: rtl;
+            background-color: #f7f8fa;
         }
-
-        h2 {
-            font-size: 24px;
-            margin-bottom: 10px;
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
         }
-
-        #editableTitleExpense, #editableTitleIncome {
-            font-size: 22px;
-            font-weight: bold;
-            cursor: text;
-            display: inline-block;
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: #fff;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        .main-content {
+            transition: margin-right 0.3s ease-in-out;
         }
-
-        #date {
-            font-size: 16px;
-            color: #555;
-            margin-bottom: 15px;
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            color: #a0aec0;
+            transition: all 0.2s ease-in-out;
+            font-weight: 500;
         }
-
-        table {
-            width: 100%;
-            max-width: 800px;
-            margin: 20px auto;
-            border-collapse: collapse;
-            background: #fff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            text-align: right;
-            table-layout: fixed;
+        .nav-link:hover {
+            background-color: #2d3748;
+            color: #ffffff;
         }
-
-        th, td {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            text-align: center;
+        .nav-link.active {
+            background-color: #2a6f97;
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-
-        th {
-            background-color: #f1f3f4;
-            font-weight: bold;
+        .nav-link svg {
+            margin-left: 0.75rem;
         }
-
-        tr:last-child td {
-            border-bottom: none;
+        .page {
+            display: none;
         }
-
-        .total-row {
-            background: #f8f9fa;
-            font-weight: bold;
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
         }
-
-        input {
-            width: 90%;
-            padding: 6px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            text-align: center;
-            transition: border-color 0.3s;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
-        input:focus {
-            border-color: #007bff;
+        .form-input, .form-select {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input:focus, .form-select:focus {
             outline: none;
+            border-color: #2a6f97;
+            box-shadow: 0 0 0 2px rgba(42, 111, 151, 0.2);
         }
-
-        .add-icon {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #007bff;
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            transition: all 0.2s ease-in-out;
+            transform: translateY(0);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+        .btn-primary {
+            background-color: #2a6f97;
             color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
-
-        .add-icon:hover {
-            background: #0056b3;
-            transform: scale(1.1);
+        .btn-secondary {
+            background-color: #4a5568;
+            color: white;
         }
-
-        th:nth-child(1), td:nth-child(1) { width: 4%; }
-        th:nth-child(2), td:nth-child(2) { width: 55%; }
-        th:nth-child(3), td:nth-child(3) { width: 18%; }
-        th:nth-child(4), td:nth-child(4) { width: 13%; }
-        th:nth-child(5), td:nth-child(5) { width: 10%; }
-
-        td:nth-child(5), th:nth-child(5) {
-            text-align: right !important;
-            padding-right: 15px;
+        .btn-danger {
+            background-color: #e53e3e;
+            color: white;
         }
-
-        td:nth-child(2) input {
-            width: 95%;
-            padding: 8px;
-        }
-
-        td:nth-child(4) input {
-            width: 70%;
-            padding: 6px;
-        }
-
-        .buttons-container {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .action-btn {
-            font-family: 'Tajawal', sans-serif;
-            font-size: 12px;
-            font-weight: bold;
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            background: #fff;
-            color: #333;
-            width: 80px;
+        .item-row input {
             text-align: center;
         }
-
-        .action-btn:hover {
-            transform: scale(1.05);
-            background: #f1f3f4;
-        }
-
-        .action-btn.return-btn {
-            color: #e74c3c;
-        }
-
-        .confirmation-message {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-            display: none;
-        }
-
-        /* أنماط رسائل التأكيد */
-        #saveConfirmationExpense {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border: 2px solid #28a745;
-        }
-
-        #saveConfirmationIncome {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border: 2px solid #28a745;
-        }
-
-        /* أنماط الواجهة الرئيسية والمخزن */
-        .main-page {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-
-        .store-page {
-            display: none;
-            padding: 20px;
-        }
-
-        .income-page, .expense-page {
-            display: none;
-            padding: 20px;
-        }
-
-        .backup-page {
-            display: none;
-            padding: 20px;
-        }
-
-        .accounts-page {
-            display: none;
-            padding: 20px;
-        }
-
-        .receipt-type-page {
-            display: none;
-            padding: 20px;
-        }
-
-        .main-button {
-            font-size: 18px;
-            padding: 15px 30px;
-            margin: 10px;
-            text-align: center; /* توسيط النص أفقيًا */
-            width: 200px; /* عرض محدد للأزرار */
-            display: flex; /* استخدام flexbox */
-            align-items: center; /* توسيط النص عموديًا */
-            justify-content: center; /* توسيط النص أفقيًا */
-        }
-
-        .no-data {
-            font-size: 18px;
-            color: #666;
-        }
-
-        .receipt-list {
-            list-style: none;
-            padding: 0;
-        }
-
-        .receipt-item {
-            background: #fff;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .receipt-item:hover {
-            background: #f1f3f4;
-        }
-
-        .accounts-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            max-width: 800px;
-            margin: 30px auto;
-        }
-
-        .account-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-        }
-
-        .account-item {
-            flex: 1;
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        .account-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .account-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-        }
-
-        .account-item.income::before {
-            background: linear-gradient(90deg, #28a745, #20c997);
-        }
-
-        .account-item.expense::before {
-            background: linear-gradient(90deg, #e74c3c, #fd7e14);
-        }
-
-        .account-item.net::before {
-            background: linear-gradient(90deg, #007bff, #6610f2);
-        }
-
-        .account-icon {
-            font-size: 32px;
-            margin-bottom: 15px;
-            display: block;
-        }
-
-        .income .account-icon {
-            color: #28a745;
-        }
-
-        .expense .account-icon {
-            color: #e74c3c;
-        }
-
-        .net .account-icon {
-            color: #007bff;
-        }
-
-        .account-label {
-            display: block;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #495057;
-        }
-
-        .account-value {
-            display: block;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .income .account-value {
-            color: #28a745;
-        }
-
-        .expense .account-value {
-            color: #e74c3c;
-        }
-
-        .net .account-value {
-            color: #007bff;
-        }
-
-        .account-currency {
-            font-size: 16px;
-            color: #6c757d;
-            margin-right: 5px;
-        }
-
-        .accounts-summary {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        }
-
-        .summary-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #343a40;
-        }
-
-        .summary-chart {
-            height: 10px;
-            background: #e9ecef;
-            border-radius: 5px;
-            margin: 15px 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .income-bar {
-            position: absolute;
-            height: 100%;
-            background: #28a745;
-            border-radius: 5px 0 0 5px;
-        }
-
-        .expense-bar {
-            position: absolute;
-            height: 100%;
-            background: #e74c3c;
-            border-radius: 0 5px 5px 0;
-            right: 0;
-        }
-
-        .summary-stats {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            color: #6c757d;
-        }
-
-        #longPressHint {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 1000;
-        }
-
-        /* أنماط الطباعة - Print Styles */
+        
+        /* Print Styles */
         @media print {
-            /* الحفاظ على الألوان عند الطباعة */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+            body * {
+                visibility: hidden;
             }
-            
-            /* إخفاء الأزرار عند الطباعة */
-            .buttons-container, 
-            .action-btn, 
-            .add-icon,
-            .return-btn {
-                display: none !important;
+            #print-area, #print-area * {
+                visibility: visible;
             }
-            
-            /* تحسين مظهر الطباعة */
-            body {
-                background-color: white;
-                margin: 0;
-                padding: 20px;
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                font-size: 12pt;
             }
-            
-            /* التأكد من ظهور النص بشكل واضح */
-            table, th, td, h2, p, span {
-                color: #000 !important;
-            }
-            
-            /* إظهار المجموع بشكل واضح */
-            .total-row td {
-                font-weight: bold;
-            }
-            
-            /* إظهار العملة (الدينار العراقي) بشكل واضح */
-            .account-currency {
-                color: #000 !important;
-                font-weight: bold;
+            #print-controls {
+                display: none;
             }
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100">
 
-<!-- الواجهة الرئيسية -->
-<div class="main-page" id="mainPage">
-    <h1>نظام إدارة الفواتير</h1>
-    <p>مرحبًا! يمكنك إصدار فواتير جديدة، أو عرض الفواتير المحفوظة.</p>
-    
-    <div class="main-buttons">
-        <button class="action-btn main-button" onclick="showPage('receiptTypePage')">إصدار وصل</button>
-        <button class="action-btn main-button" onclick="showPage('storePage')">المخزن</button>
-        <button class="action-btn main-button" onclick="showPage('accountsPage')">الحسابات</button>
-        <button class="action-btn main-button" onclick="showPage('backupPage')">النسخ الاحتياطي</button>
-    </div>
-</div>
-
-<!-- صفحة اختيار نوع الوصل -->
-<div class="receipt-type-page" id="receiptTypePage">
-    <h2>ما نوع الوصل؟</h2>
-    <div class="buttons-container">
-        <button class="action-btn" onclick="showIncomeReceipt()">وصل الدخل</button>
-        <button class="action-btn" onclick="showExpenseReceipt()">وصل المصروف</button>
-    </div>
-</div>
-
-<!-- صفحة إصدار وصل المصروف -->
-<div id="expenseReceiptPage" style="display: none;">
-    <h2 id="editableTitleExpense" contenteditable="true">وصل مصروف</h2>
-    <p id="dateExpense"></p>
-
-    <table id="expenseAccountsTable">
-        <thead>
-            <tr>
-                <th>ت</th>
-                <th>المادة</th>
-                <th>السعر</th>
-                <th>الكمية</th>
-                <th>$</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td><input type="text" class="item"></td>
-                <td><input type="number" class="price" step="0.01" oninput="calculateTotal(this, 'expense')"></td>
-                <td><input type="number" class="quantity" oninput="calculateTotal(this, 'expense')"></td>
-                <td><span class="total">0</span></td>
-            </tr>
-        </tbody>
-        <tfoot>
-            <tr class="total-row">
-                <td colspan="4" style="text-align: right;">المجموع</td>
-                <td><span id="grandTotalExpense">0</span></td>
-            </tr>
-        </tfoot>
-    </table>
-
-    <div class="buttons-container">
-        <button class="action-btn" onclick="saveData('expense')">حفظ</button>
-        <button class="action-btn" onclick="deleteReceipt('expense')">حذف</button>
-        <button class="action-btn" onclick="printReceipt('expense')">طباعة</button>
-    </div>
-
-    <div class="add-icon" id="addExpenseRow">
-        <ion-icon name="add-outline"></ion-icon>
-    </div>
-
-    <div class="confirmation-message" id="saveConfirmationExpense">تم الحفظ بنجاح!</div>
-</div>
-
-<!-- صفحة إصدار وصل الدخل -->
-<div id="incomeReceiptPage" style="display: none;">
-    <h2 id="editableTitleIncome" contenteditable="true">وصل دخل</h2>
-    <p id="dateIncome"></p>
-
-    <table id="incomeAccountsTable">
-        <thead>
-            <tr>
-                <th>ت</th>
-                <th>الخدمة</th>
-                <th>السعر</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td><input type="text" class="service"></td>
-                <td><input type="number" class="price" step="0.01" oninput="calculateTotal(this, 'income')"></td>
-            </tr>
-        </tbody>
-        <tfoot>
-            <tr class="total-row">
-                <td colspan="2" style="text-align: right;">المجموع</td>
-                <td><span id="grandTotalIncome">0</span></td>
-            </tr>
-        </tfoot>
-    </table>
-
-    <div class="buttons-container">
-        <button class="action-btn" onclick="saveData('income')">حفظ</button>
-        <button class="action-btn" onclick="deleteReceipt('income')">حذف</button>
-        <button class="action-btn" onclick="printReceipt('income')">طباعة</button>
-    </div>
-
-    <div class="add-icon" id="addIncomeRow">
-        <ion-icon name="add-outline"></ion-icon>
-    </div>
-
-    <div class="confirmation-message" id="saveConfirmationIncome">تم الحفظ بنجاح!</div>
-</div>
-
-<!-- صفحة المخزن -->
-<div class="store-page" id="storePage">
-    <h1>المخزن</h1>
-    <button class="action-btn return-btn" onclick="refreshPage()">العودة</button>
-    <div class="buttons-container">
-        <button class="action-btn" onclick="showPage('incomePage')">وصلات الدخل</button>
-        <button class="action-btn" onclick="showPage('expensePage')">وصلات المصروف</button>
-    </div>
-</div>
-
-<!-- صفحة وصلات الدخل -->
-<div class="income-page" id="incomePage">
-    <h1>وصلات الدخل</h1>
-    <button class="action-btn return-btn" onclick="showPage('storePage')">العودة</button>
-    <ul class="receipt-list" id="incomeList"></ul>
-</div>
-
-<!-- صفحة وصلات المصروف -->
-<div class="expense-page" id="expensePage">
-    <h1>وصلات المصروف</h1>
-    <button class="action-btn return-btn" onclick="showPage('storePage')">العودة</button>
-    <ul class="receipt-list" id="expenseList"></ul>
-</div>
-
-<!-- صفحة الحسابات -->
-<div id="accountsPage" style="display: none;">
-    <h1>الحسابات</h1>
-    <button class="action-btn return-btn" onclick="refreshPage()">العودة</button>
-    
-    <div class="accounts-container">
-        <div class="account-row">
-            <div class="account-item income">
-                <ion-icon name="arrow-down-circle" class="account-icon"></ion-icon>
-                <span class="account-label">الدخل</span>
-                <span class="account-value"><span id="incomeValue">0</span> <span class="account-currency">د.ع</span></span>
+    <!-- Login Page -->
+    <div id="login-page" class="flex items-center justify-center h-screen">
+        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+            <div class="flex flex-col items-center mb-6">
+                <span class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cyan-100 mb-2">
+                    <i data-feather="dollar-sign" class="text-cyan-500" style="width:36px;height:36px"></i>
+                </span>
+                <span class="text-2xl font-extrabold text-cyan-700">حساباتي</span>
             </div>
-            
-            <div class="account-item expense">
-                <ion-icon name="arrow-up-circle" class="account-icon"></ion-icon>
-                <span class="account-label">المصروف</span>
-                <span class="account-value"><span id="expenseValue">0</span> <span class="account-currency">د.ع</span></span>
-            </div>
-        </div>
-        
-        <div class="account-item net">
-            <ion-icon name="wallet" class="account-icon"></ion-icon>
-            <span class="account-label">الصافي</span>
-            <span class="account-value"><span id="netValue">0</span> <span class="account-currency">د.ع</span></span>
-        </div>
-        
-        <div class="accounts-summary">
-            <div class="summary-title">ملخص الحسابات</div>
-            <div class="summary-chart">
-                <div class="income-bar" id="incomeBar" style="width: 50%;"></div>
-                <div class="expense-bar" id="expenseBar" style="width: 30%;"></div>
-            </div>
-            <div class="summary-stats">
-                <div>الدخل: <span id="incomePercent">0%</span></div>
-                <div>المصروف: <span id="expensePercent">0%</span></div>
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">تسجيل الدخول</h1>
+            <p class="text-center text-gray-500 mb-8">أهلاً بك في نظام حساباتي</p>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">البريد الإلكتروني</label>
+                    <input type="email" id="email" class="form-input w-full mt-1" required>
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">كلمة المرور</label>
+                    <input type="password" id="password" class="form-input w-full mt-1" required>
+                </div>
+                <div id="auth-error" class="text-red-500 text-sm text-center hidden"></div>
+                <div>
+                    <button type="submit" id="login-btn" class="btn btn-primary w-full">تسجيل الدخول</button>
+                </div>
+            </form>
+            <div class="mt-6 text-center">
+                <span class="text-gray-600">هل لا تمتلك حساب؟</span>
+                <button type="button" id="register-btn" class="text-cyan-700 font-bold hover:underline bg-transparent border-none p-0 m-0">إنشاء حساب جديد</button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- صفحة النسخ الاحتياطي -->
-<div class="backup-page" id="backupPage">
-    <h1>النسخ الاحتياطي</h1>
-    <button class="action-btn return-btn" onclick="refreshPage()">العودة</button>
-    <div class="buttons-container">
-        <button class="action-btn" onclick="downloadBackup()">تنزيل النسخة الاحتياطية</button>
-        <input type="file" id="uploadBackup" accept=".json" style="display: none;" onchange="uploadBackup(event)">
-        <button class="action-btn" onclick="document.getElementById('uploadBackup').click()">رفع النسخة الاحتياطية</button>
+    <!-- Register Page -->
+    <div id="register-page" class="flex items-center justify-center h-screen hidden">
+        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">تسجيل حساب جديد</h1>
+            <p class="text-center text-gray-500 mb-8">يرجى إدخال البيانات التالية</p>
+            <form id="register-form" class="space-y-6">
+                <div>
+                    <label for="register-username" class="block text-sm font-medium text-gray-700">اسم المستخدم</label>
+                    <input type="text" id="register-username" class="form-input w-full mt-1" required>
+                </div>
+                <div>
+                    <label for="register-email" class="block text-sm font-medium text-gray-700">البريد الإلكتروني</label>
+                    <input type="email" id="register-email" class="form-input w-full mt-1" required>
+                </div>
+                <div>
+                    <label for="register-password" class="block text-sm font-medium text-gray-700">كلمة المرور</label>
+                    <input type="password" id="register-password" class="form-input w-full mt-1" required>
+                </div>
+                <div>
+                    <label for="register-password2" class="block text-sm font-medium text-gray-700">تأكيد كلمة المرور</label>
+                    <input type="password" id="register-password2" class="form-input w-full mt-1" required>
+                </div>
+                <div id="register-error" class="text-red-500 text-sm text-center hidden"></div>
+                <div class="flex items-center justify-between gap-4">
+                    <button type="submit" class="btn btn-primary w-full">إنشاء الحساب</button>
+                    <button type="button" id="back-to-login-btn" class="btn btn-secondary w-full">عودة لتسجيل الدخول</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <!-- رسالة نجاح الرفع -->
-    <div id="uploadSuccess" class="confirmation-message" style="display: none;">
-        تم رفع النسخة الاحتياطية بنجاح!
+    <!-- Main App Container -->
+    <div id="app-container" class="hidden">
+        <div class="flex h-screen">
+            <!-- Sidebar -->
+            <aside class="sidebar bg-[#1a202c] text-white w-64 space-y-6 py-7 px-2 fixed inset-y-0 right-0">
+                <div class="text-white text-2xl font-extrabold text-center">
+                    <a href="#" class="flex items-center justify-center space-x-2">
+                        <i data-feather="dollar-sign" class="text-cyan-400"></i>
+                        <span>حساباتي</span>
+                    </a>
+                </div>
+                <nav>
+                    <a href="#dashboard" class="nav-link active">
+                        <i data-feather="home"></i>
+                        <span>لوحة التحكم</span>
+                    </a>
+                    <a href="#income" class="nav-link">
+                        <i data-feather="arrow-down-circle"></i>
+                        <span>وصل دخل جديد</span>
+                    </a>
+                    <a href="#expense" class="nav-link">
+                        <i data-feather="arrow-up-circle"></i>
+                        <span>وصل صرف جديد</span>
+                    </a>
+                    <a href="#transactions" class="nav-link">
+                        <i data-feather="archive"></i>
+                        <span>سجل العمليات</span>
+                    </a>
+                </nav>
+                 <div class="absolute bottom-5 right-0 left-0 px-4 text-center">
+                    <div class="text-xs text-gray-400 mb-4">
+                        <p>المستخدم الحالي:</p>
+                        <p id="user-email-display" class="font-mono break-all">...</p>
+                    </div>
+                    <button id="logout-btn" class="btn btn-danger w-full text-sm py-2">
+                        <i data-feather="log-out" class="inline-block w-4 h-4 ml-1"></i>
+                        تسجيل الخروج
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content flex-1 mr-64 p-6 md:p-10 overflow-y-auto">
+                <!-- Page: Dashboard -->
+                <div id="dashboard-page" class="page active">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8">لوحة التحكم</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-cyan-500">
+                            <h2 class="text-lg font-semibold text-gray-600">إجمالي الدخل</h2>
+                            <p id="total-income" class="text-3xl font-bold mt-2 text-cyan-500">0.00 د.ع</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-rose-500">
+                            <h2 class="text-lg font-semibold text-gray-600">إجمالي المصروفات</h2>
+                            <p id="total-expenses" class="text-3xl font-bold mt-2 text-rose-500">0.00 د.ع</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
+                            <h2 class="text-lg font-semibold text-gray-600">الرصيد الصافي</h2>
+                            <p id="net-balance" class="text-3xl font-bold mt-2 text-blue-500">0.00 د.ع</p>
+                        </div>
+                    </div>
+
+                    <!-- Chart Section -->
+                    <div class="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-8">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">نسبة الدخل إلى المصروفات</h2>
+                            <div class="h-64 md:h-80 relative">
+                                <canvas id="transactionsChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow-md">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">أحدث العمليات</h2>
+                            <div id="recent-transactions-list" class="space-y-4">
+                                <p class="text-center text-gray-500 py-4">لا توجد عمليات لعرضها.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page: New Income -->
+                <div id="income-page" class="page">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8">إصدار وصل دخل جديد</h1>
+                    <form id="income-form" class="bg-white p-8 rounded-xl shadow-md space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <input type="text" id="income-party" class="form-input w-full" placeholder="اسم الدافع / العميل" required>
+                            <input type="date" id="income-date" class="form-input w-full" required>
+                        </div>
+                        <div class="border-t pt-6">
+                            <h3 class="font-bold text-lg mb-4">بنود الدخل</h3>
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="p-3 text-sm font-semibold tracking-wide text-right">البيان</th>
+                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-28">الكمية</th>
+                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-36">سعر الوحدة</th>
+                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-40">المجموع</th>
+                                        <th class="w-12"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="income-items-body"></tbody>
+                            </table>
+                            <button type="button" id="add-income-item-btn" class="btn btn-secondary mt-4">
+                                <i data-feather="plus" class="inline-block w-4 h-4 ml-1"></i> إضافة بند
+                            </button>
+                        </div>
+                        <div class="border-t pt-6 flex justify-between items-center">
+                            <div class="text-xl font-bold">
+                                <span>الإجمالي:</span>
+                                <span id="income-total-amount">0.00 د.ع</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary">حفظ وصل الدخل</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Page: New Expense -->
+                <div id="expense-page" class="page">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8">إصدار وصل صرف جديد</h1>
+                    <form id="expense-form" class="bg-white p-8 rounded-xl shadow-md space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <input type="text" id="expense-party" class="form-input w-full" placeholder="اسم المستلم / المورد" required>
+                            <input type="date" id="expense-date" class="form-input w-full" required>
+                        </div>
+                        <div class="border-t pt-6">
+                            <h3 class="font-bold text-lg mb-4">بنود الصرف</h3>
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="p-3 text-sm font-semibold tracking-wide text-right">البيان</th>
+                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-28">الكمية</th>
+                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-36">سعر الوحدة</th>
+                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-40">المجموع</th>
+                                        <th class="w-12"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expense-items-body"></tbody>
+                            </table>
+                            <button type="button" id="add-expense-item-btn" class="btn btn-secondary mt-4">
+                                <i data-feather="plus" class="inline-block w-4 h-4 ml-1"></i> إضافة بند
+                            </button>
+                        </div>
+                        <div class="border-t pt-6 flex justify-between items-center">
+                            <div class="text-xl font-bold">
+                                <span>الإجمالي:</span>
+                                <span id="expense-total-amount">0.00 د.ع</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary">حفظ وصل الصرف</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Page: Transactions -->
+                <div id="transactions-page" class="page">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8">سجل العمليات</h1>
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-100 border-b">
+                                <tr>
+                                    <th class="p-4 text-right font-bold text-gray-600">النوع</th>
+                                    <th class="p-4 text-right font-bold text-gray-600">التاريخ</th>
+                                    <th class="p-4 text-right font-bold text-gray-600">الجهة</th>
+                                    <th class="p-4 text-right font-bold text-gray-600">المبلغ الإجمالي</th>
+                                    <th class="p-4 text-center font-bold text-gray-600">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
 
-    <!-- رسالة فشل الرفع -->
-    <div id="uploadFailure" class="confirmation-message" style="display: none;">
-        فشل في رفع النسخة الاحتياطية! يرجى التحقق من الملف.
+    <!-- Print Modal -->
+    <div id="print-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white w-full max-w-4xl mx-auto">
+            <div id="print-area" class="p-10"></div>
+            <div id="print-controls" class="p-4 bg-gray-100 text-left">
+                <button onclick="window.print()" class="btn btn-primary">طباعة</button>
+                <button id="close-print-modal-btn" class="btn btn-secondary mr-2">إغلاق</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="hint" id="longPressHint" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background-color:rgba(0,0,0,0.7); color:white; padding:20px; border-radius:10px; z-index:1000;">
-    اضغط مطولاً لحذف الصف
-</div>
 
-<script>
-    let rowCount = 1;
-    let currentReceiptIndex = -1;
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // تبديل الصفحات
-    function showPage(pageId) {
-        document.getElementById('mainPage').style.display = 'none';
-        document.getElementById('receiptTypePage').style.display = 'none';
-        document.getElementById('expenseReceiptPage').style.display = 'none';
-        document.getElementById('incomeReceiptPage').style.display = 'none';
-        document.getElementById('storePage').style.display = 'none';
-        document.getElementById('incomePage').style.display = 'none';
-        document.getElementById('expensePage').style.display = 'none';
-        document.getElementById('accountsPage').style.display = 'none';
-        document.getElementById('backupPage').style.display = 'none';
-        document.getElementById(pageId).style.display = 'block';
-
-        if (pageId === 'incomePage' || pageId === 'expensePage') {
-            loadStoreData(pageId);
-        } else if (pageId === 'accountsPage') {
-            updateAccounts();
-        }
-    }
-
-    // عرض صفحة وصل الدخل
-    function showIncomeReceipt() {
-        showPage('incomeReceiptPage');
-        updateDate('income');
-    }
-
-    // عرض صفحة وصل المصروف
-    function showExpenseReceipt() {
-        showPage('expenseReceiptPage');
-        updateDate('expense');
-    }
-
-    // تحميل بيانات المخزن
-    function loadStoreData(pageId) {
-        const receipts = JSON.parse(localStorage.getItem("receipts")) || [];
-        const incomeList = document.getElementById("incomeList");
-        const expenseList = document.getElementById("expenseList");
-        incomeList.innerHTML = "";
-        expenseList.innerHTML = "";
-
-        if (receipts.length === 0) {
-            if (pageId === 'incomePage') {
-                incomeList.innerHTML = `<p class="no-data">لا توجد وصلات دخل محفوظة</p>`;
-            } else if (pageId === 'expensePage') {
-                expenseList.innerHTML = `<p class="no-data">لا توجد وصلات مصروف محفوظة</p>`;
-            }
-            return;
-        }
-
-        receipts.forEach((receipt, index) => {
-            const li = document.createElement("li");
-            li.className = "receipt-item";
-            li.innerHTML = `
-                <strong>${receipt.title}</strong> - ${receipt.date}
-            `;
-            li.onclick = () => loadReceipt(index);
-
-            if (receipt.type === 'income' && pageId === 'incomePage') {
-                incomeList.appendChild(li);
-            } else if (receipt.type === 'expense' && pageId === 'expensePage') {
-                expenseList.appendChild(li);
-            }
-        });
-    }
-
-    // تحميل وصل محدد
-    function loadReceipt(index) {
-        const receipts = JSON.parse(localStorage.getItem('receipts')) || [];
-        const receipt = receipts[index];
-        currentReceiptIndex = index;
-        
-        if (receipt.type === 'expense') {
-            showExpenseReceipt();
-        } else {
-            showIncomeReceipt();
-        }
-        
-        const titleElement = document.getElementById(`editableTitle${receipt.type.charAt(0).toUpperCase() + receipt.type.slice(1)}`);
-        const dateElement = document.getElementById(`date${receipt.type.charAt(0).toUpperCase() + receipt.type.slice(1)}`);
-        
-        titleElement.textContent = receipt.title;
-        dateElement.textContent = receipt.date;
-        
-        const tbody = document.querySelector(`#${receipt.type}AccountsTable tbody`);
-        tbody.innerHTML = '';
-        
-        receipt.rows.forEach((row, index) => {
-            const tr = document.createElement('tr');
-            if (receipt.type === 'expense') {
-                tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td><input type="text" class="item" value="${row.item || ''}"></td>
-                    <td><input type="number" class="price" step="0.01" value="${row.price || 0}" oninput="calculateTotal(this, 'expense')"></td>
-                    <td><input type="number" class="quantity" value="${row.quantity || 0}" oninput="calculateTotal(this, 'expense')"></td>
-                    <td><span class="total">${(row.total || 0).toFixed(0)}</span></td>
-                `;
-            } else {
-                tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td><input type="text" class="service" value="${row.service || ''}"></td>
-                    <td><input type="number" class="price" step="0.01" value="${row.price || 0}" oninput="calculateTotal(this, 'income')"></td>
-                `;
-            }
-            tbody.appendChild(tr);
-        });
-        
-        rowCount = receipt.rows.length;
-        updateGrandTotal(receipt.type);
-    }
-
-    // إضافة صف جديد
-    function addRow(type) {
-        rowCount++;
-        const table = document.getElementById(`${type}AccountsTable`).getElementsByTagName('tbody')[0];
-        const newRow = table.insertRow();
-
-        if (type === 'expense') {
-            newRow.innerHTML = `
-                <td>${rowCount}</td>
-                <td><input type="text" class="item"></td>
-                <td><input type="number" class="price" step="0.01" oninput="calculateTotal(this, '${type}')"></td>
-                <td><input type="number" class="quantity" oninput="calculateTotal(this, '${type}')"></td>
-                <td><span class="total">0</span></td>
-            `;
-        } else {
-            newRow.innerHTML = `
-                <td>${rowCount}</td>
-                <td><input type="text" class="service"></td>
-                <td><input type="number" class="price" step="0.01" oninput="calculateTotal(this, '${type}')"></td>
-            `;
-        }
-    }
-
-    // حذف الصف الأخير
-    function removeLastRow(type) {
-        const table = document.getElementById(`${type}AccountsTable`).getElementsByTagName('tbody')[0];
-        const rowCount = table.rows.length;
-        
-        // تأكد من وجود صف واحد على الأقل قبل الحذف
-        if (rowCount > 1) {
-            table.deleteRow(rowCount - 1);
-            updateGrandTotal(type);
-        }
-    }
-
-    // حساب المجموع
-    function calculateTotal(input, type) {
-        const row = input.closest('tr');
-        if (type === 'expense') {
-            const price = parseFloat(row.querySelector('.price').value) || 0;
-            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-            row.querySelector('.total').textContent = (price * quantity).toFixed(0);
-        }
-        updateGrandTotal(type);
-    }
-
-    // تحديث المجموع الكلي
-    function updateGrandTotal(type) {
-        let total = 0;
-        if (type === 'expense') {
-            document.querySelectorAll(`#${type}AccountsTable .total`).forEach(cell => {
-                total += parseFloat(cell.textContent) || 0;
-            });
-        } else {
-            document.querySelectorAll(`#${type}AccountsTable .price`).forEach(input => {
-                total += parseFloat(input.value) || 0;
-            });
-        }
-        document.getElementById(`grandTotal${type.charAt(0).toUpperCase() + type.slice(1)}`).textContent = total.toFixed(2);
-    }
-
-    // حفظ الوصل
-    function saveData(type) {
-        const title = document.getElementById(`editableTitle${type.charAt(0).toUpperCase() + type.slice(1)}`).textContent;
-        const date = document.getElementById(`date${type.charAt(0).toUpperCase() + type.slice(1)}`).textContent;
-        const rows = [];
-
-        document.querySelectorAll(`#${type}AccountsTable tbody tr`).forEach(row => {
-            if (type === 'expense') {
-                rows.push({
-                    item: row.querySelector('.item').value,
-                    price: parseFloat(row.querySelector('.price').value) || 0,
-                    quantity: parseFloat(row.querySelector('.quantity').value) || 0,
-                    total: parseFloat(row.querySelector('.total').textContent.replace(' IQD', '')) || 0
-                });
-            } else {
-                rows.push({
-                    service: row.querySelector('.service').value,
-                    price: parseFloat(row.querySelector('.price').value) || 0
-                });
-            }
-        });
-
-        const total = type === 'expense' ? 
-            rows.reduce((sum, row) => sum + row.total, 0) : 
-            rows.reduce((sum, row) => sum + row.price, 0);
-
-        const receipt = {
-            type: type,
-            title: title,
-            date: date,
-            rows: rows,
-            total: total
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2LBQonHt7cstK6VfsM3MGlRCfeX9v5v0",
+            authDomain: "my-calculation-ec9ea.firebaseapp.com",
+            projectId: "my-calculation-ec9ea",
+            storageBucket: "my-calculation-ec9ea.appspot.com",
+            messagingSenderId: "54197879072",
+            appId: "1:54197879072:web:37e18ac427d54869e55745"
         };
+        const appId = 'accounting-app-with-auth'; // A unique ID for this app's data
 
-        let receipts = JSON.parse(localStorage.getItem('receipts')) || [];
+        // --- Firebase Initialization ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        if (currentReceiptIndex >= 0) {
-            receipts[currentReceiptIndex] = receipt;
-        } else {
-            receipts.push(receipt);
-        }
+        // --- Global State ---
+        let userId = null;
+        let transactionsCollectionRef = null;
+        let transactionsUnsubscribe = null;
+        let allTransactions = [];
+        let transactionsChart = null; // Chart instance
 
-        localStorage.setItem('receipts', JSON.stringify(receipts));
+        // --- DOM Elements ---
+        const loginPage = document.getElementById('login-page');
+        const registerPage = document.getElementById('register-page');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const registerBtn = document.getElementById('register-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const authError = document.getElementById('auth-error');
+        // Register page elements
+        const registerForm = document.getElementById('register-form');
+        const registerUsername = document.getElementById('register-username');
+        const registerEmail = document.getElementById('register-email');
+        const registerPassword = document.getElementById('register-password');
+        const registerPassword2 = document.getElementById('register-password2');
+        const registerError = document.getElementById('register-error');
+        const backToLoginBtn = document.getElementById('back-to-login-btn');
+        
+        const pages = document.querySelectorAll('.page');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const userEmailDisplay = document.getElementById('user-email-display');
 
-        // تحديث صفحة الحسابات إذا تم حفظ وصل جديد
-        updateAccounts();
-
-        // إظهار رسالة الحفظ
-        const confirmationElement = document.getElementById(`saveConfirmation${type.charAt(0).toUpperCase() + type.slice(1)}`);
-        if (confirmationElement) {
-            confirmationElement.style.display = 'block';
-            setTimeout(() => {
-                confirmationElement.style.display = 'none';
-            }, 2000);
-        }
-    }
-
-    // حذف الوصل
-    function deleteReceipt(type) {
-        if (currentReceiptIndex === -1) {
-            alert("لم يتم تحميل أي وصل للحذف!");
-            return;
-        }
-
-        const receipts = JSON.parse(localStorage.getItem("receipts")) || [];
-        receipts.splice(currentReceiptIndex, 1);
-        localStorage.setItem("receipts", JSON.stringify(receipts));
-        currentReceiptIndex = -1;
-        location.reload();
-    }
-
-    // طباعة الوصل
-    function printReceipt(type) {
-        window.print();
-    }
-
-    // تحديث التاريخ
-    function updateDate(type) {
-        const today = new Date();
-        document.getElementById(`date${type.charAt(0).toUpperCase() + type.slice(1)}`).textContent = `التاريخ: ${today.toLocaleDateString('ar-EG')}`;
-    }
-
-    // تحديث الحسابات
-    function updateAccounts() {
-        const receipts = JSON.parse(localStorage.getItem('receipts')) || [];
-        let totalIncome = 0;
-        let totalExpense = 0;
-
-        receipts.forEach(receipt => {
-            if (receipt.type === 'income') {
-                receipt.rows.forEach(row => {
-                    totalIncome += parseFloat(row.price) || 0;
-                });
-            } else if (receipt.type === 'expense') {
-                receipt.rows.forEach(row => {
-                    totalExpense += parseFloat(row.total) || 0;
-                });
+        // --- Utility Functions ---
+        const formatCurrency = (amount) => new Intl.NumberFormat('ar-IQ', { style: 'currency', currency: 'IQD', minimumFractionDigits: 2 }).format(amount);
+        const formatDate = (date) => new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+        const getTodayDateString = () => new Date().toISOString().split('T')[0];
+        
+        // --- Authentication Logic ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in
+                userId = user.uid;
+                userEmailDisplay.textContent = user.email;
+                
+                loginPage.classList.add('hidden');
+                registerPage.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                
+                setupFirestoreListeners();
+                handleInitialLoad(); // Navigate to correct page after login
+            } else {
+                // User is signed out
+                userId = null;
+                loginPage.classList.remove('hidden');
+                registerPage.classList.add('hidden');
+                appContainer.classList.add('hidden');
+                
+                // Unsubscribe from Firestore listener if it exists
+                if (transactionsUnsubscribe) {
+                    transactionsUnsubscribe();
+                    transactionsUnsubscribe = null;
+                }
+                // Clear data
+                allTransactions = [];
+                updateDashboard();
+                renderTransactionsTable();
+                if(transactionsChart) transactionsChart.destroy();
             }
+             feather.replace();
         });
 
-        const netAmount = totalIncome - totalExpense;
-
-        // تحديث قيم العناصر
-        document.getElementById('incomeValue').textContent = totalIncome.toLocaleString();
-        document.getElementById('expenseValue').textContent = totalExpense.toLocaleString();
-        document.getElementById('netValue').textContent = netAmount.toLocaleString();
-
-        // تحديث الرسم البياني
-        const total = totalIncome + totalExpense;
-        if (total > 0) {
-            const incomePercent = Math.round((totalIncome / total) * 100);
-            const expensePercent = Math.round((totalExpense / total) * 100);
-            
-            document.getElementById('incomeBar').style.width = `${incomePercent}%`;
-            document.getElementById('expenseBar').style.width = `${expensePercent}%`;
-            
-            document.getElementById('incomePercent').textContent = `${incomePercent}%`;
-            document.getElementById('expensePercent').textContent = `${expensePercent}%`;
-        } else {
-            document.getElementById('incomeBar').style.width = '0%';
-            document.getElementById('expenseBar').style.width = '0%';
-            
-            document.getElementById('incomePercent').textContent = '0%';
-            document.getElementById('expensePercent').textContent = '0%';
-        }
-    }
-
-    // تنزيل النسخة الاحتياطية
-    function downloadBackup() {
-        const receipts = JSON.parse(localStorage.getItem("receipts")) || [];
-        const dataStr = JSON.stringify(receipts, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'backup.json';
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // رفع النسخة الاحتياطية
-    function uploadBackup(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authError.classList.add('hidden');
             try {
-                const data = JSON.parse(e.target.result);
-                localStorage.setItem("receipts", JSON.stringify(data));
-                showUploadMessage(true);
-                loadStoreData();
+                await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                showUploadMessage(false);
+                console.error("Login failed:", error.message);
+                authError.textContent = "فشل تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.";
+                authError.classList.remove('hidden');
+            }
+        });
+
+        // Show register page
+        registerBtn.addEventListener('click', () => {
+            loginPage.classList.add('hidden');
+            registerPage.classList.remove('hidden');
+            registerForm.reset();
+            registerError.classList.add('hidden');
+        });
+
+        // Back to login page
+        backToLoginBtn.addEventListener('click', () => {
+            registerPage.classList.add('hidden');
+            loginPage.classList.remove('hidden');
+            authError.classList.add('hidden');
+        });
+
+        // Register form logic
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            registerError.classList.add('hidden');
+            const username = registerUsername.value.trim();
+            const email = registerEmail.value.trim();
+            const password = registerPassword.value;
+            const password2 = registerPassword2.value;
+
+            if (!username) {
+                registerError.textContent = "يرجى إدخال اسم المستخدم.";
+                registerError.classList.remove('hidden');
+                return;
+            }
+            if (!email) {
+                registerError.textContent = "يرجى إدخال البريد الإلكتروني.";
+                registerError.classList.remove('hidden');
+                return;
+            }
+            if (password.length < 6) {
+                registerError.textContent = "يجب أن تكون كلمة المرور 6 أحرف على الأقل.";
+                registerError.classList.remove('hidden');
+                return;
+            }
+            if (password !== password2) {
+                registerError.textContent = "كلمتا المرور غير متطابقتين.";
+                registerError.classList.remove('hidden');
+                return;
+            }
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                // حفظ اسم المستخدم في Firestore
+                const user = userCredential.user;
+                await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/profile`), {
+                    username,
+                    email,
+                    createdAt: serverTimestamp()
+                });
+                // تسجيل الدخول تلقائياً سيتم عبر onAuthStateChanged
+            } catch (error) {
+                console.error("Registration failed:", error.message);
+                registerError.textContent = "فشل التسجيل. قد يكون البريد الإلكتروني مستخدماً بالفعل.";
+                registerError.classList.remove('hidden');
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        });
+
+
+        // --- Page/Router Logic ---
+        function showPage(pageId) {
+            pages.forEach(page => page.classList.toggle('active', page.id === pageId));
+            navLinks.forEach(link => link.classList.toggle('active', link.hash === `#${pageId.replace('-page', '')}`));
+            if (pageId === 'income-page') resetForm('income');
+            else if (pageId === 'expense-page') resetForm('expense');
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = link.hash.substring(1) + '-page';
+                showPage(pageId);
+                window.location.hash = link.hash;
+            });
+        });
+        
+        function handleInitialLoad() {
+            const hash = window.location.hash || '#dashboard';
+            const pageId = hash.substring(1) + '-page';
+            showPage(document.getElementById(pageId) ? pageId : 'dashboard-page');
+        }
+
+        // --- Firestore Listeners ---
+        function setupFirestoreListeners() {
+            if (!userId) return;
+            // Use a path that includes the user's unique ID to keep data private
+            transactionsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/transactions`);
+            const q = query(transactionsCollectionRef);
+
+            if (transactionsUnsubscribe) transactionsUnsubscribe();
+
+            transactionsUnsubscribe = onSnapshot(q, (snapshot) => {
+                allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allTransactions.sort((a, b) => (b.date.toDate ? b.date.toDate() : new Date()) - (a.date.toDate ? a.date.toDate() : new Date()));
+                updateDashboard();
+                renderTransactionsTable();
+                renderChart();
+            }, (error) => console.error("Error fetching transactions:", error));
+        }
+
+        // --- UI Update Functions ---
+        function updateDashboard() {
+            const totalIncome = allTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.totalAmount, 0);
+            const totalExpenses = allTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.totalAmount, 0);
+            const netBalance = totalIncome - totalExpenses;
+
+            document.getElementById('total-income').textContent = formatCurrency(totalIncome);
+            document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('net-balance').textContent = formatCurrency(netBalance);
+            
+            const recentList = document.getElementById('recent-transactions-list');
+            recentList.innerHTML = '';
+            if(allTransactions.length === 0) {
+                 recentList.innerHTML = '<p class="text-center text-gray-500 py-4">لا توجد عمليات لعرضها.</p>';
+                 return;
+            }
+            
+            allTransactions.slice(0, 5).forEach(t => {
+                const isIncome = t.type === 'income';
+                const item = document.createElement('div');
+                item.className = `flex justify-between items-center p-3 rounded-lg ${isIncome ? 'bg-cyan-50' : 'bg-rose-50'}`;
+                item.innerHTML = `
+                    <div>
+                        <p class="font-bold">${isIncome ? 'دخل من' : 'صرف إلى'} ${t.partyName}</p>
+                        <p class="text-sm text-gray-500">${t.date.toDate ? formatDate(t.date.toDate()) : 'تاريخ غير صالح'}</p>
+                    </div>
+                    <p class="font-bold text-lg ${isIncome ? 'text-cyan-600' : 'text-rose-600'}">${formatCurrency(t.totalAmount)}</p>
+                `;
+                recentList.appendChild(item);
+            });
+        }
+
+        function renderTransactionsTable() {
+            const tableBody = document.getElementById('transactions-table-body');
+            tableBody.innerHTML = '';
+            if (allTransactions.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-500">لا توجد سجلات لعرضها.</td></tr>';
+                return;
+            }
+
+            allTransactions.forEach(t => {
+                const isIncome = t.type === 'income';
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-semibold ${isIncome ? 'bg-cyan-100 text-cyan-800' : 'bg-rose-100 text-rose-800'}">${isIncome ? 'دخل' : 'صرف'}</span></td>
+                    <td class="p-4 text-gray-700">${t.date.toDate ? formatDate(t.date.toDate()) : 'تاريخ غير صالح'}</td>
+                    <td class="p-4 text-gray-700 font-medium">${t.partyName}</td>
+                    <td class="p-4 text-gray-700 font-bold">${formatCurrency(t.totalAmount)}</td>
+                    <td class="p-4 text-center flex flex-row justify-center gap-2">
+                        <button data-id="${t.id}" class="print-btn text-blue-600 hover:underline">طباعة</button>
+                        <button data-id="${t.id}" class="delete-btn text-red-600 hover:underline flex items-center gap-1">
+                            <i data-feather="trash-2" class="w-4 h-4"></i> حذف
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // --- Chart Logic ---
+        const centerTextPlugin = {
+            id: 'centerText',
+            afterDraw: (chart) => {
+                if (chart.config.type !== 'doughnut') return;
+                const { ctx, chartArea: { top, right, bottom, left, width, height } } = chart;
+                const totalIncome = chart.data.datasets[0].data[0] || 0;
+                const totalExpenses = chart.data.datasets[0].data[1] || 0;
+                const netBalance = totalIncome - totalExpenses;
+
+                ctx.save();
+                ctx.font = 'bold 1.5rem Tajawal, sans-serif';
+                ctx.fillStyle = netBalance >= 0 ? '#0891b2' : '#e11d48';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const centerX = left + width / 2;
+                const centerY = top + height / 2;
+                ctx.fillText(formatCurrency(netBalance), centerX, centerY);
+                
+                ctx.font = '0.875rem Tajawal, sans-serif';
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText('الرصيد الصافي', centerX, centerY - 30);
+                ctx.restore();
             }
         };
-        reader.readAsText(file);
-    }
 
-    // إظهار رسالة الرفع
-    function showUploadMessage(isSuccess) {
-        const successMessage = document.getElementById("uploadSuccess");
-        const failureMessage = document.getElementById("uploadFailure");
+        function renderChart() {
+            const ctx = document.getElementById('transactionsChart');
+            if (!ctx) return;
 
-        if (isSuccess) {
-            successMessage.style.display = "block";
-            setTimeout(() => successMessage.style.display = "none", 3000);
-        } else {
-            failureMessage.style.display = "block";
-            setTimeout(() => failureMessage.style.display = "none", 3000);
+            const totalIncome = allTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.totalAmount, 0);
+            const totalExpenses = allTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.totalAmount, 0);
+
+            const data = {
+                labels: ['الدخل', 'المصروفات'],
+                datasets: [{
+                    label: 'المجموع',
+                    data: [totalIncome, totalExpenses],
+                    backgroundColor: ['#06b6d4', '#f43f5e'],
+                    borderColor: ['#fff'],
+                    borderWidth: 4,
+                    hoverOffset: 8
+                }]
+            };
+
+            if (transactionsChart) {
+                transactionsChart.destroy();
+            }
+
+            transactionsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    family: 'Tajawal, sans-serif',
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    return `${label}: ${formatCurrency(value)}`;
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [centerTextPlugin]
+            });
         }
-    }
 
-    // تحديث الصفحة
-    function refreshPage() {
-        location.reload();
-    }
 
-    // إعداد ميزة الضغط المطول لحذف الصف
-    function setupLongPressDelete(type) {
-        const addButton = document.getElementById(`add${type.charAt(0).toUpperCase() + type.slice(1)}Row`);
-        let pressTimer;
-        let isLongPress = false;
+        // --- Itemized Form Logic ---
+        function createItemRow() {
+            const row = document.createElement('tr');
+            row.className = 'item-row border-b';
+            row.innerHTML = `
+                <td class="p-2"><input type="text" class="form-input w-full description" placeholder="وصف البند" required></td>
+                <td class="p-2"><input type="number" class="form-input w-full quantity" placeholder="1" value="1" min="1" required></td>
+                <td class="p-2"><input type="number" class="form-input w-full price" placeholder="0.00" min="0" step="any" required></td>
+                <td class="p-2"><input type="text" class="form-input w-full bg-gray-100 total" readonly></td>
+                <td class="p-2 text-center"><button type="button" class="remove-item-btn text-red-500 hover:text-red-700 p-2 rounded-full"><i data-feather="trash-2" class="w-5 h-5"></i></button></td>
+            `;
+            row.querySelector('.remove-item-btn').addEventListener('click', () => {
+                if (row.parentElement.children.length > 1) {
+                    row.remove();
+                    updateFormTotal(row.closest('form').id.split('-')[0]);
+                }
+            });
+            row.querySelectorAll('.quantity, .price').forEach(input => {
+                input.addEventListener('input', () => updateRowTotal(row));
+            });
+            return row;
+        }
+
+        function updateRowTotal(row) {
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const total = quantity * price;
+            row.querySelector('.total').value = formatCurrency(total);
+            updateFormTotal(row.closest('form').id.split('-')[0]);
+        }
         
-        addButton.addEventListener('mousedown', function() {
-            isLongPress = false;
-            pressTimer = setTimeout(function() {
-                isLongPress = true;
-                removeLastRow(type);
-            }, 500); // وقت الانتظار للضغط المطول (500 مللي ثانية)
+        function updateFormTotal(type) {
+            const form = document.getElementById(`${type}-form`);
+            let totalAmount = 0;
+            form.querySelectorAll('.item-row').forEach(row => {
+                const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.price').value) || 0;
+                totalAmount += quantity * price;
+            });
+            document.getElementById(`${type}-total-amount`).textContent = formatCurrency(totalAmount);
+        }
+
+        function resetForm(type) {
+            const form = document.getElementById(`${type}-form`);
+            form.reset();
+            const itemsBody = document.getElementById(`${type}-items-body`);
+            itemsBody.innerHTML = '';
+            itemsBody.appendChild(createItemRow());
+            updateFormTotal(type);
+            document.getElementById(`${type}-date`).value = getTodayDateString();
+            feather.replace();
+        }
+
+        document.getElementById('add-income-item-btn').addEventListener('click', () => {
+            document.getElementById('income-items-body').appendChild(createItemRow());
+            feather.replace();
         });
+        document.getElementById('add-expense-item-btn').addEventListener('click', () => {
+            document.getElementById('expense-items-body').appendChild(createItemRow());
+            feather.replace();
+        });
+
+        // --- Form Submission ---
+        async function handleFormSubmit(event, type) {
+            event.preventDefault();
+            if (!transactionsCollectionRef) {
+                alert("قاعدة البيانات غير جاهزة، يرجى المحاولة مرة أخرى.");
+                return;
+            }
+
+            const form = event.target;
+            const partyName = form.querySelector(`#${type}-party`).value;
+            const date = form.querySelector(`#${type}-date`).value;
+            
+            const items = [];
+            let totalAmount = 0;
+            let isValid = true;
+            form.querySelectorAll('.item-row').forEach(row => {
+                const description = row.querySelector('.description').value;
+                const quantity = parseFloat(row.querySelector('.quantity').value);
+                const price = parseFloat(row.querySelector('.price').value);
+                
+                if (!description || !quantity || isNaN(price)) isValid = false;
+                
+                const itemTotal = quantity * price;
+                items.push({ description, quantity, price, total: itemTotal });
+                totalAmount += itemTotal;
+            });
+
+            if (!isValid || items.length === 0) {
+                alert("يرجى ملء جميع حقول البنود بشكل صحيح.");
+                return;
+            }
+
+            try {
+                await addDoc(transactionsCollectionRef, { type, partyName, date: new Date(date), items, totalAmount, createdAt: serverTimestamp() });
+                alert(`تم حفظ وصل الـ${type === 'income' ? 'دخل' : 'صرف'} بنجاح!`);
+                showPage('dashboard-page');
+                window.location.hash = '#dashboard';
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                alert("حدث خطأ أثناء حفظ البيانات.");
+            }
+        }
+
+        document.getElementById('income-form').addEventListener('submit', (e) => handleFormSubmit(e, 'income'));
+        document.getElementById('expense-form').addEventListener('submit', (e) => handleFormSubmit(e, 'expense'));
+
+        // --- Print Modal Logic ---
+        const printModal = document.getElementById('print-modal');
+        const printArea = document.getElementById('print-area');
         
-        addButton.addEventListener('mouseup', function() {
-            clearTimeout(pressTimer);
-            if (!isLongPress) {
-                addRow(type);
+        document.querySelector('#app-container').addEventListener('click', (e) => {
+            // Print button
+            if (e.target.classList.contains('print-btn')) {
+                const transactionId = e.target.dataset.id;
+                const transaction = allTransactions.find(t => t.id === transactionId);
+                if (transaction) {
+                    generatePrintContent(transaction);
+                    printModal.classList.remove('hidden');
+                }
+            }
+            // Delete button
+            if (e.target.classList.contains('delete-btn') || (e.target.closest('.delete-btn') && e.target.closest('.delete-btn').classList.contains('delete-btn'))) {
+                const btn = e.target.classList.contains('delete-btn') ? e.target : e.target.closest('.delete-btn');
+                const transactionId = btn.dataset.id;
+                if (confirm('هل أنت متأكد أنك تريد حذف هذا السجل؟ لا يمكن التراجع عن هذه العملية.')) {
+                    handleDeleteTransaction(transactionId);
+                }
             }
         });
-        
-        addButton.addEventListener('mouseleave', function() {
-            clearTimeout(pressTimer);
-        });
-        
-        // دعم الأجهزة اللمسية
-        addButton.addEventListener('touchstart', function(e) {
-            isLongPress = false;
-            pressTimer = setTimeout(function() {
-                isLongPress = true;
-                removeLastRow(type);
-            }, 500);
-            e.preventDefault();
-        });
-        
-        addButton.addEventListener('touchend', function(e) {
-            clearTimeout(pressTimer);
-            if (!isLongPress) {
-                addRow(type);
+
+        async function handleDeleteTransaction(transactionId) {
+            if (!transactionsCollectionRef || !transactionId) return;
+            try {
+                // حذف الوثيقة من Firestore
+                await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
+                    .then(({ deleteDoc, doc }) =>
+                        deleteDoc(doc(transactionsCollectionRef, transactionId))
+                    );
+            } catch (error) {
+                alert('حدث خطأ أثناء حذف السجل.');
+                console.error(error);
             }
-            e.preventDefault();
-        });
-        
-        addButton.addEventListener('touchcancel', function(e) {
-            clearTimeout(pressTimer);
-            e.preventDefault();
-        });
-    }
-
-    // تهيئة الصفحة
-    document.addEventListener('DOMContentLoaded', function() {
-        // تهيئة التواريخ
-        updateDate('income');
-        updateDate('expense');
-        
-        // إعداد ميزة الضغط المطول لحذف الصف
-        setupLongPressDelete('income');
-        setupLongPressDelete('expense');
-        
-        // إظهار رسالة الضغط المطول
-        if (!localStorage.getItem("longPressHintShown")) {
-            document.getElementById("longPressHint").style.display = "block";
-            setTimeout(function() {
-                document.getElementById("longPressHint").style.display = "none";
-                localStorage.setItem("longPressHintShown", "true");
-            }, 3000); // Display for 3 seconds
         }
-    });
-</script>
 
+        function generatePrintContent(t) {
+            const isIncome = t.type === 'income';
+            const itemsHtml = t.items.map(item => `
+                <tr class="border-b">
+                    <td class="py-2 px-4">${item.description}</td>
+                    <td class="py-2 px-4 text-center">${item.quantity}</td>
+                    <td class="py-2 px-4 text-center">${formatCurrency(item.price)}</td>
+                    <td class="py-2 px-4 text-center">${formatCurrency(item.total)}</td>
+                </tr>
+            `).join('');
+
+            printArea.innerHTML = `
+                <header class="flex justify-between items-start pb-6 border-b-2 mb-6">
+                    <div>
+                        <h1 class="text-4xl font-bold ${isIncome ? 'text-cyan-600' : 'text-rose-600'}">${isIncome ? 'وصل قبض' : 'وصل صرف'}</h1>
+                        <p class="text-gray-500 mt-2">رقم المرجع: ${t.id}</p>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-bold text-lg">حساباتي</p>
+                        <p class="text-gray-600">تاريخ الإصدار: ${t.date.toDate ? formatDate(t.date.toDate()) : 'تاريخ غير صالح'}</p>
+                    </div>
+                </header>
+                <div class="mb-6">
+                    <p class="text-gray-600">${isIncome ? 'مستلم من السيد/السادة:' : 'يُصرف للسيد/السادة:'}</p>
+                    <p class="text-xl font-semibold">${t.partyName}</p>
+                </div>
+                <table class="w-full text-right mb-6">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="py-2 px-4 font-semibold">البيان</th>
+                            <th class="py-2 px-4 font-semibold text-center">الكمية</th>
+                            <th class="py-2 px-4 font-semibold text-center">سعر الوحدة</th>
+                            <th class="py-2 px-4 font-semibold text-center">المجموع</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+                <footer class="flex justify-end mt-8">
+                    <div class="w-1/2">
+                        <div class="flex justify-between py-2 px-4 bg-gray-100 rounded-t-lg">
+                            <span class="font-semibold">المبلغ الإجمالي</span>
+                            <span class="font-semibold">${formatCurrency(t.totalAmount)}</span>
+                        </div>
+                        <div class="py-4 px-4 border-l border-r border-b rounded-b-lg">
+                            <p class="font-bold">المبلغ كتابةً:</p>
+                            <p class="text-gray-600">... سيتم إضافة تحويل الرقم إلى نص هنا ...</p>
+                        </div>
+                        <div class="mt-16 text-center">
+                            <p class="border-t pt-2">توقيع المستلم</p>
+                        </div>
+                    </div>
+                </footer>
+            `;
+        }
+        
+        document.getElementById('close-print-modal-btn').addEventListener('click', () => printModal.classList.add('hidden'));
+
+        // --- Initial App Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            feather.replace();
+        });
+
+    </script>
 </body>
 </html>
