@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام المحاسبة المتقدم</title>
+    <title>نظام المحاسبة - تصميم محسن</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -23,7 +23,7 @@
     <style>
         body {
             font-family: 'Tajawal', sans-serif;
-            background-color: #f7f8fa;
+            background-color: #f8fafc; /* slate-50 */
         }
         .sidebar {
             transition: transform 0.3s ease-in-out;
@@ -34,24 +34,29 @@
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 0.75rem 1.25rem;
+            padding: 0.75rem 1rem;
             border-radius: 0.5rem;
-            color: #a0aec0;
+            color: #475569; /* slate-600 */
             transition: all 0.2s ease-in-out;
             font-weight: 500;
+            margin: 0.25rem 0;
         }
         .nav-link:hover {
-            background-color: #2d3748;
-            color: #ffffff;
+            background-color: #f1f5f9; /* slate-100 */
+            color: #0f172a; /* slate-900 */
         }
         .nav-link.active {
-            background-color: #2a6f97;
+            background-color: #4f46e5; /* indigo-600 */
             color: #ffffff;
             font-weight: 700;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link.active svg {
+            color: #ffffff !important;
         }
         .nav-link svg {
             margin-left: 0.75rem;
+            color: #64748b; /* slate-500 */
         }
         .page {
             display: none;
@@ -65,16 +70,18 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .form-input, .form-select {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
+            background-color: #f8fafc; /* slate-50 */
+            border: 1px solid #e2e8f0; /* slate-200 */
             border-radius: 0.5rem;
             padding: 0.75rem 1rem;
             transition: all 0.2s ease-in-out;
+            width: 100%;
         }
         .form-input:focus, .form-select:focus {
             outline: none;
-            border-color: #2a6f97;
-            box-shadow: 0 0 0 2px rgba(42, 111, 151, 0.2);
+            border-color: #4f46e5; /* indigo-600 */
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+            background-color: #ffffff;
         }
         .btn {
             padding: 0.75rem 1.5rem;
@@ -82,108 +89,81 @@
             font-weight: 700;
             transition: all 0.2s ease-in-out;
             transform: translateY(0);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
         }
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
         }
-        .btn-primary {
-            background-color: #2a6f97;
-            color: white;
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-primary:hover { background-color: #4338ca; }
+        .btn-secondary { background-color: #e2e8f0; color: #1e293b; }
+        .btn-secondary:hover { background-color: #cbd5e1; }
+        .btn-danger { background-color: #dc2626; color: white; }
+        .btn-success { background-color: #16a34a; color: white; }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px -1px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
-        .btn-secondary {
-            background-color: #4a5568;
-            color: white;
+        .card-icon {
+            padding: 0.75rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .btn-danger {
-            background-color: #e53e3e;
-            color: white;
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            color: #64748b;
         }
-        .item-row input {
-            text-align: center;
+        .tab-btn.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+        .debt-panel.hidden {
+            display: none;
         }
         
         /* Print Styles */
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            #print-area, #print-area * {
-                visibility: visible;
-            }
-            #print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                font-size: 12pt;
-            }
-            #print-controls {
-                display: none;
-            }
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; font-size: 12pt; }
+            #print-controls, #app-container aside, #app-container main > *:not(#print-modal) { display: none; }
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
 
     <!-- Login Page -->
-    <div id="login-page" class="flex items-center justify-center h-screen">
-        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
-            <div class="flex flex-col items-center mb-6">
-                <span class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cyan-100 mb-2">
-                    <i data-feather="dollar-sign" class="text-cyan-500" style="width:36px;height:36px"></i>
+    <div id="login-page" class="flex items-center justify-center h-screen bg-slate-100">
+        <div class="w-full max-w-sm bg-white p-8 rounded-xl shadow-lg">
+            <div class="text-center mb-8">
+                 <span class="inline-block p-3 bg-indigo-100 rounded-full">
+                    <i data-feather="dollar-sign" class="text-indigo-600"></i>
                 </span>
-                <span class="text-2xl font-extrabold text-cyan-700">حساباتي</span>
+                <h1 class="text-3xl font-bold text-slate-800 mt-4">أهلاً بك</h1>
+                <p class="text-slate-500">سجل الدخول إلى نظام حساباتي</p>
             </div>
-            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">تسجيل الدخول</h1>
-            <p class="text-center text-gray-500 mb-8">أهلاً بك في نظام حساباتي</p>
-            <form id="login-form" class="space-y-6">
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">البريد الإلكتروني</label>
-                    <input type="email" id="email" class="form-input w-full mt-1" required>
-                </div>
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">كلمة المرور</label>
-                    <input type="password" id="password" class="form-input w-full mt-1" required>
-                </div>
-                <div id="auth-error" class="text-red-500 text-sm text-center hidden"></div>
-                <div>
+            <form id="login-form" class="space-y-4">
+                <div><input type="email" id="email" class="form-input" placeholder="البريد الإلكتروني" required></div>
+                <div><input type="password" id="password" class="form-input" placeholder="كلمة المرور" required></div>
+                <div id="auth-error" class="text-red-500 text-sm text-center hidden pt-2"></div>
+                <div class="pt-4 space-y-2">
                     <button type="submit" id="login-btn" class="btn btn-primary w-full">تسجيل الدخول</button>
-                </div>
-            </form>
-            <div class="mt-6 text-center">
-                <span class="text-gray-600">هل لا تمتلك حساب؟</span>
-                <button type="button" id="register-btn" class="text-cyan-700 font-bold hover:underline bg-transparent border-none p-0 m-0">إنشاء حساب جديد</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Register Page -->
-    <div id="register-page" class="flex items-center justify-center h-screen hidden">
-        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
-            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">تسجيل حساب جديد</h1>
-            <p class="text-center text-gray-500 mb-8">يرجى إدخال البيانات التالية</p>
-            <form id="register-form" class="space-y-6">
-                <div>
-                    <label for="register-username" class="block text-sm font-medium text-gray-700">اسم المستخدم</label>
-                    <input type="text" id="register-username" class="form-input w-full mt-1" required>
-                </div>
-                <div>
-                    <label for="register-email" class="block text-sm font-medium text-gray-700">البريد الإلكتروني</label>
-                    <input type="email" id="register-email" class="form-input w-full mt-1" required>
-                </div>
-                <div>
-                    <label for="register-password" class="block text-sm font-medium text-gray-700">كلمة المرور</label>
-                    <input type="password" id="register-password" class="form-input w-full mt-1" required>
-                </div>
-                <div>
-                    <label for="register-password2" class="block text-sm font-medium text-gray-700">تأكيد كلمة المرور</label>
-                    <input type="password" id="register-password2" class="form-input w-full mt-1" required>
-                </div>
-                <div id="register-error" class="text-red-500 text-sm text-center hidden"></div>
-                <div class="flex items-center justify-between gap-4">
-                    <button type="submit" class="btn btn-primary w-full">إنشاء الحساب</button>
-                    <button type="button" id="back-to-login-btn" class="btn btn-secondary w-full">عودة لتسجيل الدخول</button>
+                    <button type="button" id="register-btn" class="btn btn-secondary w-full">إنشاء حساب جديد</button>
                 </div>
             </form>
         </div>
@@ -193,169 +173,72 @@
     <div id="app-container" class="hidden">
         <div class="flex h-screen">
             <!-- Sidebar -->
-            <aside class="sidebar bg-[#1a202c] text-white w-64 space-y-6 py-7 px-2 fixed inset-y-0 right-0">
-                <div class="text-white text-2xl font-extrabold text-center">
-                    <a href="#" class="flex items-center justify-center space-x-2">
-                        <i data-feather="dollar-sign" class="text-cyan-400"></i>
-                        <span>حساباتي</span>
-                    </a>
-                </div>
+            <aside class="sidebar bg-white w-64 p-4 border-l border-slate-200 fixed inset-y-0 right-0">
+                <div class="text-center mb-8"><a href="#" class="flex items-center justify-center gap-2 text-2xl font-extrabold text-slate-800"><i data-feather="dollar-sign" class="text-indigo-600"></i><span>حساباتي</span></a></div>
                 <nav>
-                    <a href="#dashboard" class="nav-link active">
-                        <i data-feather="home"></i>
-                        <span>لوحة التحكم</span>
-                    </a>
-                    <a href="#income" class="nav-link">
-                        <i data-feather="arrow-down-circle"></i>
-                        <span>وصل دخل جديد</span>
-                    </a>
-                    <a href="#expense" class="nav-link">
-                        <i data-feather="arrow-up-circle"></i>
-                        <span>وصل صرف جديد</span>
-                    </a>
-                    <a href="#transactions" class="nav-link">
-                        <i data-feather="archive"></i>
-                        <span>سجل العمليات</span>
-                    </a>
+                    <a href="#dashboard" class="nav-link active"><i data-feather="home"></i><span>لوحة التحكم</span></a>
+                    <a href="#income" class="nav-link"><i data-feather="arrow-down-circle"></i><span>وصل دخل</span></a>
+                    <a href="#expense" class="nav-link"><i data-feather="arrow-up-circle"></i><span>وصل صرف</span></a>
+                    <a href="#debts" class="nav-link"><i data-feather="list"></i><span>إدارة الديون</span></a>
+                    <a href="#transactions" class="nav-link"><i data-feather="archive"></i><span>السجلات</span></a>
                 </nav>
-                 <div class="absolute bottom-5 right-0 left-0 px-4 text-center">
-                    <div class="text-xs text-gray-400 mb-4">
-                        <p>المستخدم الحالي:</p>
-                        <p id="user-email-display" class="font-mono break-all">...</p>
-                    </div>
-                    <button id="logout-btn" class="btn btn-danger w-full text-sm py-2">
-                        <i data-feather="log-out" class="inline-block w-4 h-4 ml-1"></i>
-                        تسجيل الخروج
-                    </button>
+                 <div class="absolute bottom-5 right-0 left-0 px-4">
+                    <div class="text-center text-xs text-slate-400 mb-4"><p>المستخدم الحالي:</p><p id="user-email-display" class="font-mono break-all text-slate-500">...</p></div>
+                    <button id="logout-btn" class="btn btn-secondary w-full text-sm py-2"><i data-feather="log-out"></i><span>تسجيل الخروج</span></button>
                 </div>
             </aside>
 
             <!-- Main Content -->
-            <main class="main-content flex-1 mr-64 p-6 md:p-10 overflow-y-auto">
+            <main class="main-content flex-1 mr-64 p-6 md:p-8 lg:p-10 overflow-y-auto">
                 <!-- Page: Dashboard -->
                 <div id="dashboard-page" class="page active">
-                    <h1 class="text-3xl font-bold text-gray-800 mb-8">لوحة التحكم</h1>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-cyan-500">
-                            <h2 class="text-lg font-semibold text-gray-600">إجمالي الدخل</h2>
-                            <p id="total-income" class="text-3xl font-bold mt-2 text-cyan-500">0.00 د.ع</p>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-rose-500">
-                            <h2 class="text-lg font-semibold text-gray-600">إجمالي المصروفات</h2>
-                            <p id="total-expenses" class="text-3xl font-bold mt-2 text-rose-500">0.00 د.ع</p>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
-                            <h2 class="text-lg font-semibold text-gray-600">الرصيد الصافي</h2>
-                            <p id="net-balance" class="text-3xl font-bold mt-2 text-blue-500">0.00 د.ع</p>
-                        </div>
+                    <h1 class="text-3xl font-bold text-slate-800 mb-8">لوحة التحكم</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
+                        <div class="card"><div class="card-icon bg-cyan-100 text-cyan-600"><i data-feather="trending-up"></i></div><div><h2 class="text-sm font-medium text-slate-500">إجمالي الدخل</h2><p id="total-income" class="text-2xl font-bold mt-1 text-slate-800">0.00 د.ع</p></div></div>
+                        <div class="card"><div class="card-icon bg-rose-100 text-rose-600"><i data-feather="trending-down"></i></div><div><h2 class="text-sm font-medium text-slate-500">إجمالي المصروفات</h2><p id="total-expenses" class="text-2xl font-bold mt-1 text-slate-800">0.00 د.ع</p></div></div>
+                        <div class="card"><div class="card-icon bg-indigo-100 text-indigo-600"><i data-feather="briefcase"></i></div><div><h2 class="text-sm font-medium text-slate-500">الرصيد الصافي</h2><p id="net-balance" class="text-2xl font-bold mt-1 text-slate-800">0.00 د.ع</p></div></div>
+                        <div class="card"><div class="card-icon bg-emerald-100 text-emerald-600"><i data-feather="arrow-down-left"></i></div><div><h2 class="text-sm font-medium text-slate-500">ديون مستحقة لك</h2><p id="total-receivables" class="text-2xl font-bold mt-1 text-slate-800">0.00 د.ع</p></div></div>
+                        <div class="card"><div class="card-icon bg-amber-100 text-amber-600"><i data-feather="arrow-up-right"></i></div><div><h2 class="text-sm font-medium text-slate-500">ديون مطلوبة منك</h2><p id="total-payables" class="text-2xl font-bold mt-1 text-slate-800">0.00 د.ع</p></div></div>
                     </div>
-
-                    <!-- Chart Section -->
                     <div class="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-8">
-                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                            <h2 class="text-xl font-bold text-gray-800 mb-4">نسبة الدخل إلى المصروفات</h2>
-                            <div class="h-64 md:h-80 relative">
-                                <canvas id="transactionsChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow-md">
-                            <h2 class="text-xl font-bold text-gray-800 mb-4">أحدث العمليات</h2>
-                            <div id="recent-transactions-list" class="space-y-4">
-                                <p class="text-center text-gray-500 py-4">لا توجد عمليات لعرضها.</p>
-                            </div>
-                        </div>
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm"><h2 class="text-xl font-bold text-slate-800 mb-4">الدخل والمصروفات</h2><div class="h-64 md:h-80 relative"><canvas id="transactionsChart"></canvas></div></div>
+                        <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow-sm"><h2 class="text-xl font-bold text-slate-800 mb-4">أحدث العمليات</h2><div id="recent-transactions-list" class="space-y-4"><p class="text-center text-slate-500 py-4">لا توجد عمليات لعرضها.</p></div></div>
                     </div>
                 </div>
 
-                <!-- Page: New Income -->
-                <div id="income-page" class="page">
-                    <h1 class="text-3xl font-bold text-gray-800 mb-8">إصدار وصل دخل جديد</h1>
-                    <form id="income-form" class="bg-white p-8 rounded-xl shadow-md space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <input type="text" id="income-party" class="form-input w-full" placeholder="اسم الدافع / العميل" required>
-                            <input type="date" id="income-date" class="form-input w-full" required>
-                        </div>
-                        <div class="border-t pt-6">
-                            <h3 class="font-bold text-lg mb-4">بنود الدخل</h3>
-                            <table class="w-full">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="p-3 text-sm font-semibold tracking-wide text-right">البيان</th>
-                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-28">الكمية</th>
-                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-36">سعر الوحدة</th>
-                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-40">المجموع</th>
-                                        <th class="w-12"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="income-items-body"></tbody>
-                            </table>
-                            <button type="button" id="add-income-item-btn" class="btn btn-secondary mt-4">
-                                <i data-feather="plus" class="inline-block w-4 h-4 ml-1"></i> إضافة بند
-                            </button>
-                        </div>
-                        <div class="border-t pt-6 flex justify-between items-center">
-                            <div class="text-xl font-bold">
-                                <span>الإجمالي:</span>
-                                <span id="income-total-amount">0.00 د.ع</span>
-                            </div>
-                            <button type="submit" class="btn btn-primary">حفظ وصل الدخل</button>
-                        </div>
-                    </form>
-                </div>
+                <!-- Page: New Income/Expense -->
+                <div id="income-page" class="page"></div>
+                <div id="expense-page" class="page"></div>
 
-                <!-- Page: New Expense -->
-                <div id="expense-page" class="page">
-                    <h1 class="text-3xl font-bold text-gray-800 mb-8">إصدار وصل صرف جديد</h1>
-                    <form id="expense-form" class="bg-white p-8 rounded-xl shadow-md space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <input type="text" id="expense-party" class="form-input w-full" placeholder="اسم المستلم / المورد" required>
-                            <input type="date" id="expense-date" class="form-input w-full" required>
-                        </div>
-                        <div class="border-t pt-6">
-                            <h3 class="font-bold text-lg mb-4">بنود الصرف</h3>
-                            <table class="w-full">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="p-3 text-sm font-semibold tracking-wide text-right">البيان</th>
-                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-28">الكمية</th>
-                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-36">سعر الوحدة</th>
-                                        <th class="p-3 text-sm font-semibold tracking-wide text-center w-40">المجموع</th>
-                                        <th class="w-12"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="expense-items-body"></tbody>
-                            </table>
-                            <button type="button" id="add-expense-item-btn" class="btn btn-secondary mt-4">
-                                <i data-feather="plus" class="inline-block w-4 h-4 ml-1"></i> إضافة بند
-                            </button>
-                        </div>
-                        <div class="border-t pt-6 flex justify-between items-center">
-                            <div class="text-xl font-bold">
-                                <span>الإجمالي:</span>
-                                <span id="expense-total-amount">0.00 د.ع</span>
+                <!-- Page: Debts -->
+                <div id="debts-page" class="page">
+                    <h1 class="text-3xl font-bold text-slate-800 mb-8">إدارة الديون</h1>
+                    <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm mb-8">
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">إضافة دين جديد</h2>
+                        <form id="debt-form">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                                <div><label for="debt-type" class="block text-sm font-medium text-slate-700 mb-1">نوع الدين</label><select id="debt-type" class="form-select" required><option value="receivable">دين مستحق لي (سأقبض)</option><option value="payable">دين مطلوب مني (سأدفع)</option></select></div>
+                                <div><label for="debt-party" class="block text-sm font-medium text-slate-700 mb-1">اسم الطرف الآخر</label><input type="text" id="debt-party" class="form-input" required></div>
+                                <div><label for="debt-amount" class="block text-sm font-medium text-slate-700 mb-1">المبلغ</label><input type="number" id="debt-amount" class="form-input" min="0" step="any" required></div>
+                                <div><label for="debt-date" class="block text-sm font-medium text-slate-700 mb-1">التاريخ</label><input type="date" id="debt-date" class="form-input" required></div>
                             </div>
-                            <button type="submit" class="btn btn-primary">حفظ وصل الصرف</button>
-                        </div>
-                    </form>
+                            <div class="mt-4 flex items-center gap-4">
+                               <button type="submit" class="btn btn-primary">إضافة الدين</button>
+                               <div id="debt-form-feedback" class="text-sm font-semibold"></div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="mb-6"><div class="border-b border-slate-200"><nav id="debt-tabs" class="-mb-px flex gap-6" aria-label="Tabs"><button type="button" data-tab="receivables" class="tab-btn active">ديون مستحقة لك</button><button type="button" data-tab="payables" class="tab-btn">ديون مطلوبة منك</button></nav></div></div>
+                    <div>
+                        <div id="receivables-panel" class="debt-panel space-y-4"></div>
+                        <div id="payables-panel" class="debt-panel hidden space-y-4"></div>
+                    </div>
                 </div>
 
                 <!-- Page: Transactions -->
                 <div id="transactions-page" class="page">
-                    <h1 class="text-3xl font-bold text-gray-800 mb-8">سجل العمليات</h1>
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                        <table class="w-full">
-                            <thead class="bg-gray-100 border-b">
-                                <tr>
-                                    <th class="p-4 text-right font-bold text-gray-600">النوع</th>
-                                    <th class="p-4 text-right font-bold text-gray-600">التاريخ</th>
-                                    <th class="p-4 text-right font-bold text-gray-600">الجهة</th>
-                                    <th class="p-4 text-right font-bold text-gray-600">المبلغ الإجمالي</th>
-                                    <th class="p-4 text-center font-bold text-gray-600">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transactions-table-body"></tbody>
-                        </table>
-                    </div>
+                    <h1 class="text-3xl font-bold text-slate-800 mb-8">سجل العمليات</h1>
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden"><table class="w-full"><thead class="bg-slate-50 border-b"><tr><th class="p-4 text-right font-bold text-slate-600">النوع</th><th class="p-4 text-right font-bold text-slate-600">التاريخ</th><th class="p-4 text-right font-bold text-slate-600">الجهة</th><th class="p-4 text-right font-bold text-slate-600">المبلغ</th><th class="p-4 text-center font-bold text-slate-600">الإجراءات</th></tr></thead><tbody id="transactions-table-body"></tbody></table></div>
                 </div>
             </main>
         </div>
@@ -363,12 +246,9 @@
 
     <!-- Print Modal -->
     <div id="print-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white w-full max-w-4xl mx-auto">
+        <div class="bg-white w-full max-w-4xl mx-auto rounded-lg">
             <div id="print-area" class="p-10"></div>
-            <div id="print-controls" class="p-4 bg-gray-100 text-left">
-                <button onclick="window.print()" class="btn btn-primary">طباعة</button>
-                <button id="close-print-modal-btn" class="btn btn-secondary mr-2">إغلاق</button>
-            </div>
+            <div id="print-controls" class="p-4 bg-slate-50 text-left rounded-b-lg border-t"><button onclick="window.print()" class="btn btn-primary">طباعة</button><button id="close-print-modal-btn" class="btn btn-secondary mr-2">إغلاق</button></div>
         </div>
     </div>
 
@@ -377,7 +257,7 @@
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, where, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -388,7 +268,7 @@
             messagingSenderId: "54197879072",
             appId: "1:54197879072:web:37e18ac427d54869e55745"
         };
-        const appId = 'accounting-app-with-auth'; // A unique ID for this app's data
+        const appId = 'accounting-app-with-auth';
 
         // --- Firebase Initialization ---
         const app = initializeApp(firebaseConfig);
@@ -398,13 +278,15 @@
         // --- Global State ---
         let userId = null;
         let transactionsCollectionRef = null;
+        let debtsCollectionRef = null;
         let transactionsUnsubscribe = null;
+        let debtsUnsubscribe = null;
         let allTransactions = [];
-        let transactionsChart = null; // Chart instance
+        let allDebts = [];
+        let transactionsChart = null;
 
         // --- DOM Elements ---
         const loginPage = document.getElementById('login-page');
-        const registerPage = document.getElementById('register-page');
         const appContainer = document.getElementById('app-container');
         const loginForm = document.getElementById('login-form');
         const emailInput = document.getElementById('email');
@@ -412,157 +294,64 @@
         const registerBtn = document.getElementById('register-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const authError = document.getElementById('auth-error');
-        // Register page elements
-        const registerForm = document.getElementById('register-form');
-        const registerUsername = document.getElementById('register-username');
-        const registerEmail = document.getElementById('register-email');
-        const registerPassword = document.getElementById('register-password');
-        const registerPassword2 = document.getElementById('register-password2');
-        const registerError = document.getElementById('register-error');
-        const backToLoginBtn = document.getElementById('back-to-login-btn');
-        
         const pages = document.querySelectorAll('.page');
         const navLinks = document.querySelectorAll('.nav-link');
         const userEmailDisplay = document.getElementById('user-email-display');
 
         // --- Utility Functions ---
         const formatCurrency = (amount) => new Intl.NumberFormat('ar-IQ', { style: 'currency', currency: 'IQD', minimumFractionDigits: 2 }).format(amount);
-        const formatDate = (date) => new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+        const formatDate = (d) => d ? new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
         const getTodayDateString = () => new Date().toISOString().split('T')[0];
         
         // --- Authentication Logic ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // User is signed in
                 userId = user.uid;
                 userEmailDisplay.textContent = user.email;
-                
                 loginPage.classList.add('hidden');
-                registerPage.classList.add('hidden');
                 appContainer.classList.remove('hidden');
-                
                 setupFirestoreListeners();
-                handleInitialLoad(); // Navigate to correct page after login
+                handleInitialLoad();
             } else {
-                // User is signed out
                 userId = null;
                 loginPage.classList.remove('hidden');
-                registerPage.classList.add('hidden');
                 appContainer.classList.add('hidden');
-                
-                // Unsubscribe from Firestore listener if it exists
-                if (transactionsUnsubscribe) {
-                    transactionsUnsubscribe();
-                    transactionsUnsubscribe = null;
-                }
-                // Clear data
-                allTransactions = [];
-                updateDashboard();
-                renderTransactionsTable();
+                if (transactionsUnsubscribe) transactionsUnsubscribe();
+                if (debtsUnsubscribe) debtsUnsubscribe();
+                allTransactions = []; allDebts = [];
+                updateUI();
                 if(transactionsChart) transactionsChart.destroy();
             }
-             feather.replace();
+            feather.replace();
         });
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = emailInput.value;
-            const password = passwordInput.value;
             authError.classList.add('hidden');
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                console.error("Login failed:", error.message);
-                authError.textContent = "فشل تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.";
-                authError.classList.remove('hidden');
-            }
+            try { await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value); } 
+            catch (error) { authError.textContent = "فشل الدخول. تحقق من بياناتك."; authError.classList.remove('hidden'); }
         });
 
-        // Show register page
-        registerBtn.addEventListener('click', () => {
-            loginPage.classList.add('hidden');
-            registerPage.classList.remove('hidden');
-            registerForm.reset();
-            registerError.classList.add('hidden');
-        });
-
-        // Back to login page
-        backToLoginBtn.addEventListener('click', () => {
-            registerPage.classList.add('hidden');
-            loginPage.classList.remove('hidden');
+        registerBtn.addEventListener('click', async () => {
             authError.classList.add('hidden');
+            if (passwordInput.value.length < 6) { authError.textContent = "كلمة المرور يجب أن تكون 6 أحرف على الأقل."; authError.classList.remove('hidden'); return; }
+            try { await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value); } 
+            catch (error) { authError.textContent = "فشل التسجيل. قد يكون البريد مستخدماً."; authError.classList.remove('hidden'); }
         });
 
-        // Register form logic
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            registerError.classList.add('hidden');
-            const username = registerUsername.value.trim();
-            const email = registerEmail.value.trim();
-            const password = registerPassword.value;
-            const password2 = registerPassword2.value;
-
-            if (!username) {
-                registerError.textContent = "يرجى إدخال اسم المستخدم.";
-                registerError.classList.remove('hidden');
-                return;
-            }
-            if (!email) {
-                registerError.textContent = "يرجى إدخال البريد الإلكتروني.";
-                registerError.classList.remove('hidden');
-                return;
-            }
-            if (password.length < 6) {
-                registerError.textContent = "يجب أن تكون كلمة المرور 6 أحرف على الأقل.";
-                registerError.classList.remove('hidden');
-                return;
-            }
-            if (password !== password2) {
-                registerError.textContent = "كلمتا المرور غير متطابقتين.";
-                registerError.classList.remove('hidden');
-                return;
-            }
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                // حفظ اسم المستخدم في Firestore
-                const user = userCredential.user;
-                await setDoc(doc(db, `artifacts/${appId}/users/${user.uid}/profile`), {
-                    username,
-                    email,
-                    createdAt: serverTimestamp()
-                });
-                // تسجيل الدخول تلقائياً سيتم عبر onAuthStateChanged
-            } catch (error) {
-                console.error("Registration failed:", error.message);
-                registerError.textContent = "فشل التسجيل. قد يكون البريد الإلكتروني مستخدماً بالفعل.";
-                registerError.classList.remove('hidden');
-            }
-        });
-
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Logout failed:", error);
-            }
-        });
-
+        logoutBtn.addEventListener('click', async () => { try { await signOut(auth); } catch (error) { console.error("Logout failed:", error); } });
 
         // --- Page/Router Logic ---
         function showPage(pageId) {
             pages.forEach(page => page.classList.toggle('active', page.id === pageId));
             navLinks.forEach(link => link.classList.toggle('active', link.hash === `#${pageId.replace('-page', '')}`));
-            if (pageId === 'income-page') resetForm('income');
-            else if (pageId === 'expense-page') resetForm('expense');
+            if (pageId === 'income-page' || pageId === 'expense-page') { renderTransactionForm(pageId.split('-')[0]); } 
+            else if (pageId === 'debts-page') { initDebtPage(); }
+            feather.replace();
         }
 
         navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const pageId = link.hash.substring(1) + '-page';
-                showPage(pageId);
-                window.location.hash = link.hash;
-            });
+            link.addEventListener('click', (e) => { e.preventDefault(); const pageId = link.hash.substring(1) + '-page'; showPage(pageId); window.location.hash = link.hash; });
         });
         
         function handleInitialLoad() {
@@ -571,375 +360,256 @@
             showPage(document.getElementById(pageId) ? pageId : 'dashboard-page');
         }
 
-        // --- Firestore Listeners ---
+        // --- Firestore Listeners & UI Updates ---
         function setupFirestoreListeners() {
             if (!userId) return;
-            // Use a path that includes the user's unique ID to keep data private
-            transactionsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/transactions`);
-            const q = query(transactionsCollectionRef);
+            const commonPath = `artifacts/${appId}/users/${userId}`;
+            transactionsCollectionRef = collection(db, `${commonPath}/transactions`);
+            debtsCollectionRef = collection(db, `${commonPath}/debts`);
 
             if (transactionsUnsubscribe) transactionsUnsubscribe();
-
-            transactionsUnsubscribe = onSnapshot(q, (snapshot) => {
+            transactionsUnsubscribe = onSnapshot(query(transactionsCollectionRef), (snapshot) => {
                 allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                allTransactions.sort((a, b) => (b.date.toDate ? b.date.toDate() : new Date()) - (a.date.toDate ? a.date.toDate() : new Date()));
-                updateDashboard();
-                renderTransactionsTable();
-                renderChart();
-            }, (error) => console.error("Error fetching transactions:", error));
+                allTransactions.sort((a, b) => (b.date?.toDate() || 0) - (a.date?.toDate() || 0));
+                updateUI();
+            });
+
+            if (debtsUnsubscribe) debtsUnsubscribe();
+            debtsUnsubscribe = onSnapshot(query(debtsCollectionRef, where("status", "==", "active")), (snapshot) => {
+                allDebts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allDebts.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+                updateUI();
+            });
+        }
+        
+        function updateUI() {
+            updateDashboard();
+            renderTransactionsTable();
+            renderDebtCards();
+            renderChart();
+            feather.replace();
         }
 
-        // --- UI Update Functions ---
         function updateDashboard() {
             const totalIncome = allTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.totalAmount, 0);
             const totalExpenses = allTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.totalAmount, 0);
-            const netBalance = totalIncome - totalExpenses;
-
             document.getElementById('total-income').textContent = formatCurrency(totalIncome);
             document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
-            document.getElementById('net-balance').textContent = formatCurrency(netBalance);
+            document.getElementById('net-balance').textContent = formatCurrency(totalIncome - totalExpenses);
             
+            const totalReceivables = allDebts.filter(d => d.type === 'receivable').reduce((sum, d) => sum + d.amount, 0);
+            const totalPayables = allDebts.filter(d => d.type === 'payable').reduce((sum, d) => sum + d.amount, 0);
+            document.getElementById('total-receivables').textContent = formatCurrency(totalReceivables);
+            document.getElementById('total-payables').textContent = formatCurrency(totalPayables);
+
             const recentList = document.getElementById('recent-transactions-list');
-            recentList.innerHTML = '';
-            if(allTransactions.length === 0) {
-                 recentList.innerHTML = '<p class="text-center text-gray-500 py-4">لا توجد عمليات لعرضها.</p>';
-                 return;
-            }
-            
-            allTransactions.slice(0, 5).forEach(t => {
+            recentList.innerHTML = allTransactions.length === 0 ? '<p class="text-center text-slate-500 py-4">لا توجد عمليات لعرضها.</p>' : allTransactions.slice(0, 5).map(t => {
                 const isIncome = t.type === 'income';
-                const item = document.createElement('div');
-                item.className = `flex justify-between items-center p-3 rounded-lg ${isIncome ? 'bg-cyan-50' : 'bg-rose-50'}`;
-                item.innerHTML = `
-                    <div>
-                        <p class="font-bold">${isIncome ? 'دخل من' : 'صرف إلى'} ${t.partyName}</p>
-                        <p class="text-sm text-gray-500">${t.date.toDate ? formatDate(t.date.toDate()) : 'تاريخ غير صالح'}</p>
-                    </div>
-                    <p class="font-bold text-lg ${isIncome ? 'text-cyan-600' : 'text-rose-600'}">${formatCurrency(t.totalAmount)}</p>
-                `;
-                recentList.appendChild(item);
-            });
+                return `<div class="flex justify-between items-center p-3 rounded-lg bg-slate-50"><div class="flex items-center gap-3"><span class="p-2 rounded-full ${isIncome ? 'bg-cyan-100 text-cyan-600' : 'bg-rose-100 text-rose-600'}"><i data-feather="${isIncome ? 'arrow-down' : 'arrow-up'}" class="w-4 h-4"></i></span><div><p class="font-bold text-slate-700">${isIncome ? 'دخل من' : 'صرف إلى'} ${t.partyName}</p><p class="text-sm text-slate-500">${formatDate(t.date?.toDate())}</p></div></div><p class="font-bold text-lg ${isIncome ? 'text-cyan-600' : 'text-rose-600'}">${formatCurrency(t.totalAmount)}</p></div>`;
+            }).join('');
         }
 
         function renderTransactionsTable() {
             const tableBody = document.getElementById('transactions-table-body');
-            tableBody.innerHTML = '';
-            if (allTransactions.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-500">لا توجد سجلات لعرضها.</td></tr>';
-                return;
-            }
-
-            allTransactions.forEach(t => {
+            tableBody.innerHTML = allTransactions.length === 0 ? '<tr><td colspan="5" class="text-center p-6 text-slate-500">لا توجد سجلات.</td></tr>' : allTransactions.map(t => {
                 const isIncome = t.type === 'income';
-                const row = document.createElement('tr');
-                row.className = 'border-b hover:bg-gray-50';
-                row.innerHTML = `
-                    <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-semibold ${isIncome ? 'bg-cyan-100 text-cyan-800' : 'bg-rose-100 text-rose-800'}">${isIncome ? 'دخل' : 'صرف'}</span></td>
-                    <td class="p-4 text-gray-700">${t.date.toDate ? formatDate(t.date.toDate()) : 'تاريخ غير صالح'}</td>
-                    <td class="p-4 text-gray-700 font-medium">${t.partyName}</td>
-                    <td class="p-4 text-gray-700 font-bold">${formatCurrency(t.totalAmount)}</td>
-                    <td class="p-4 text-center flex flex-row justify-center gap-2">
-                        <button data-id="${t.id}" class="print-btn text-blue-600 hover:underline">طباعة</button>
-                        <button data-id="${t.id}" class="delete-btn text-red-600 hover:underline flex items-center gap-1">
-                            <i data-feather="trash-2" class="w-4 h-4"></i> حذف
-                        </button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
+                return `<tr class="border-b hover:bg-slate-50"><td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-semibold ${isIncome ? 'bg-cyan-100 text-cyan-800' : 'bg-rose-100 text-rose-800'}">${isIncome ? 'دخل' : 'صرف'}</span></td><td class="p-4 text-slate-700">${formatDate(t.date?.toDate())}</td><td class="p-4 text-slate-700 font-medium">${t.partyName}</td><td class="p-4 text-slate-800 font-bold">${formatCurrency(t.totalAmount)}</td><td class="p-4 text-center"><button data-id="${t.id}" class="print-btn text-indigo-600 hover:underline font-semibold">طباعة</button></td></tr>`;
+            }).join('');
         }
         
-        // --- Chart Logic ---
-        const centerTextPlugin = {
-            id: 'centerText',
-            afterDraw: (chart) => {
-                if (chart.config.type !== 'doughnut') return;
-                const { ctx, chartArea: { top, right, bottom, left, width, height } } = chart;
-                const totalIncome = chart.data.datasets[0].data[0] || 0;
-                const totalExpenses = chart.data.datasets[0].data[1] || 0;
-                const netBalance = totalIncome - totalExpenses;
-
-                ctx.save();
-                ctx.font = 'bold 1.5rem Tajawal, sans-serif';
-                ctx.fillStyle = netBalance >= 0 ? '#0891b2' : '#e11d48';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                const centerX = left + width / 2;
-                const centerY = top + height / 2;
-                ctx.fillText(formatCurrency(netBalance), centerX, centerY);
-                
-                ctx.font = '0.875rem Tajawal, sans-serif';
-                ctx.fillStyle = '#6b7280';
-                ctx.fillText('الرصيد الصافي', centerX, centerY - 30);
-                ctx.restore();
-            }
-        };
-
         function renderChart() {
-            const ctx = document.getElementById('transactionsChart');
+            const ctx = document.getElementById('transactionsChart')?.getContext('2d');
             if (!ctx) return;
-
             const totalIncome = allTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.totalAmount, 0);
             const totalExpenses = allTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.totalAmount, 0);
-
-            const data = {
-                labels: ['الدخل', 'المصروفات'],
-                datasets: [{
-                    label: 'المجموع',
-                    data: [totalIncome, totalExpenses],
-                    backgroundColor: ['#06b6d4', '#f43f5e'],
-                    borderColor: ['#fff'],
-                    borderWidth: 4,
-                    hoverOffset: 8
-                }]
-            };
-
-            if (transactionsChart) {
-                transactionsChart.destroy();
-            }
-
-            transactionsChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: data,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%',
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    family: 'Tajawal, sans-serif',
-                                    size: 14
-                                }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => {
-                                    const label = context.label || '';
-                                    const value = context.parsed || 0;
-                                    return `${label}: ${formatCurrency(value)}`;
-                                }
-                            }
-                        }
-                    }
-                },
-                plugins: [centerTextPlugin]
-            });
+            const data = { labels: ['الدخل', 'المصروفات'], datasets: [{ data: [totalIncome, totalExpenses], backgroundColor: ['#06b6d4', '#f43f5e'], borderWidth: 0, spacing: 5, borderRadius: 10 }] };
+            if (transactionsChart) transactionsChart.destroy();
+            transactionsChart = new Chart(ctx, { type: 'doughnut', data, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { padding: 20, font: { family: 'Tajawal' } } } } } });
+        }
+        
+        // --- Transaction Form ---
+        function renderTransactionForm(type) {
+            const isIncome = type === 'income';
+            document.getElementById(`${type}-page`).innerHTML = `<h1 class="text-3xl font-bold text-slate-800 mb-8">إصدار وصل ${isIncome ? 'دخل' : 'صرف'} جديد</h1><form id="${type}-form" class="bg-white p-6 md:p-8 rounded-xl shadow-sm space-y-6"><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><input type="text" id="${type}-party" class="form-input" placeholder="اسم ${isIncome ? 'الدافع' : 'المستلم'}" required><input type="date" id="${type}-date" class="form-input" required></div><div class="border-t pt-6"><h3 class="font-bold text-lg mb-4 text-slate-700">البنود</h3><div class="overflow-x-auto"><table class="w-full min-w-[600px]"><thead class="bg-slate-50"><tr><th class="p-3 text-sm font-semibold text-right text-slate-600">البيان</th><th class="p-3 text-sm font-semibold text-center w-28 text-slate-600">الكمية</th><th class="p-3 text-sm font-semibold text-center w-36 text-slate-600">سعر الوحدة</th><th class="p-3 text-sm font-semibold text-center w-40 text-slate-600">المجموع</th><th class="w-12"></th></tr></thead><tbody id="${type}-items-body"></tbody></table></div><button type="button" id="add-${type}-item-btn" class="btn btn-secondary mt-4"><i data-feather="plus"></i> إضافة بند</button></div><div class="border-t pt-6 flex justify-between items-center"><div class="text-xl font-bold text-slate-800"><span>الإجمالي:</span> <span id="${type}-total-amount">0.00 د.ع</span></div><button type="submit" class="btn btn-primary">حفظ الوصل</button></div></form>`;
+            setupTransactionForm(type);
         }
 
+        function setupTransactionForm(type) {
+            const form = document.getElementById(`${type}-form`);
+            form.addEventListener('submit', (e) => handleTransactionSubmit(e, type));
+            document.getElementById(`add-${type}-item-btn`).addEventListener('click', () => { document.getElementById(`${type}-items-body`).appendChild(createItemRow(type)); feather.replace(); });
+            resetTransactionForm(type);
+        }
 
-        // --- Itemized Form Logic ---
-        function createItemRow() {
+        function createItemRow(type) {
             const row = document.createElement('tr');
             row.className = 'item-row border-b';
-            row.innerHTML = `
-                <td class="p-2"><input type="text" class="form-input w-full description" placeholder="وصف البند" required></td>
-                <td class="p-2"><input type="number" class="form-input w-full quantity" placeholder="1" value="1" min="1" required></td>
-                <td class="p-2"><input type="number" class="form-input w-full price" placeholder="0.00" min="0" step="any" required></td>
-                <td class="p-2"><input type="text" class="form-input w-full bg-gray-100 total" readonly></td>
-                <td class="p-2 text-center"><button type="button" class="remove-item-btn text-red-500 hover:text-red-700 p-2 rounded-full"><i data-feather="trash-2" class="w-5 h-5"></i></button></td>
-            `;
-            row.querySelector('.remove-item-btn').addEventListener('click', () => {
-                if (row.parentElement.children.length > 1) {
-                    row.remove();
-                    updateFormTotal(row.closest('form').id.split('-')[0]);
-                }
-            });
-            row.querySelectorAll('.quantity, .price').forEach(input => {
-                input.addEventListener('input', () => updateRowTotal(row));
-            });
+            row.innerHTML = `<td class="p-2"><input type="text" class="form-input description" placeholder="وصف البند" required></td><td class="p-2"><input type="number" class="form-input quantity" value="1" min="1" required></td><td class="p-2"><input type="number" class="form-input price" placeholder="0.00" min="0" step="any" required></td><td class="p-2"><input type="text" class="form-input bg-slate-100 text-center font-semibold total" readonly></td><td class="p-2 text-center"><button type="button" class="remove-item-btn text-slate-400 hover:text-red-500 p-2 rounded-full"><i data-feather="trash-2" class="w-5 h-5"></i></button></td>`;
+            row.querySelector('.remove-item-btn').addEventListener('click', () => { if (row.parentElement.children.length > 1) { row.remove(); updateFormTotal(type); } });
+            row.querySelectorAll('.quantity, .price').forEach(input => input.addEventListener('input', () => updateRowTotal(row, type)));
             return row;
         }
 
-        function updateRowTotal(row) {
+        function updateRowTotal(row, type) {
             const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
             const price = parseFloat(row.querySelector('.price').value) || 0;
-            const total = quantity * price;
-            row.querySelector('.total').value = formatCurrency(total);
-            updateFormTotal(row.closest('form').id.split('-')[0]);
+            row.querySelector('.total').value = formatCurrency(quantity * price);
+            updateFormTotal(type);
         }
         
         function updateFormTotal(type) {
-            const form = document.getElementById(`${type}-form`);
             let totalAmount = 0;
-            form.querySelectorAll('.item-row').forEach(row => {
-                const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-                const price = parseFloat(row.querySelector('.price').value) || 0;
-                totalAmount += quantity * price;
-            });
+            document.querySelectorAll(`#${type}-form .item-row`).forEach(row => { totalAmount += (parseFloat(row.querySelector('.quantity').value) || 0) * (parseFloat(row.querySelector('.price').value) || 0); });
             document.getElementById(`${type}-total-amount`).textContent = formatCurrency(totalAmount);
         }
 
-        function resetForm(type) {
+        function resetTransactionForm(type) {
             const form = document.getElementById(`${type}-form`);
+            if (!form) return;
             form.reset();
             const itemsBody = document.getElementById(`${type}-items-body`);
             itemsBody.innerHTML = '';
-            itemsBody.appendChild(createItemRow());
+            itemsBody.appendChild(createItemRow(type));
             updateFormTotal(type);
             document.getElementById(`${type}-date`).value = getTodayDateString();
             feather.replace();
         }
-
-        document.getElementById('add-income-item-btn').addEventListener('click', () => {
-            document.getElementById('income-items-body').appendChild(createItemRow());
-            feather.replace();
-        });
-        document.getElementById('add-expense-item-btn').addEventListener('click', () => {
-            document.getElementById('expense-items-body').appendChild(createItemRow());
-            feather.replace();
-        });
-
-        // --- Form Submission ---
-        async function handleFormSubmit(event, type) {
+        
+        async function handleTransactionSubmit(event, type) {
             event.preventDefault();
-            if (!transactionsCollectionRef) {
-                alert("قاعدة البيانات غير جاهزة، يرجى المحاولة مرة أخرى.");
-                return;
-            }
-
             const form = event.target;
             const partyName = form.querySelector(`#${type}-party`).value;
             const date = form.querySelector(`#${type}-date`).value;
-            
-            const items = [];
-            let totalAmount = 0;
-            let isValid = true;
-            form.querySelectorAll('.item-row').forEach(row => {
-                const description = row.querySelector('.description').value;
-                const quantity = parseFloat(row.querySelector('.quantity').value);
-                const price = parseFloat(row.querySelector('.price').value);
-                
-                if (!description || !quantity || isNaN(price)) isValid = false;
-                
-                const itemTotal = quantity * price;
-                items.push({ description, quantity, price, total: itemTotal });
-                totalAmount += itemTotal;
-            });
+            const items = Array.from(form.querySelectorAll('.item-row')).map(row => ({ description: row.querySelector('.description').value, quantity: parseFloat(row.querySelector('.quantity').value), price: parseFloat(row.querySelector('.price').value), total: (parseFloat(row.querySelector('.quantity').value) || 0) * (parseFloat(row.querySelector('.price').value) || 0) }));
+            if (items.some(it => !it.description || !it.quantity || isNaN(it.price))) { alert("يرجى ملء جميع حقول البنود."); return; }
+            const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+            try {
+                await addDoc(transactionsCollectionRef, { type, partyName, date: new Date(date), items, totalAmount, createdAt: serverTimestamp() });
+                showPage('dashboard-page'); window.location.hash = '#dashboard';
+            } catch (error) { console.error("Error adding document: ", error); alert("حدث خطأ أثناء الحفظ."); }
+        }
 
-            if (!isValid || items.length === 0) {
-                alert("يرجى ملء جميع حقول البنود بشكل صحيح.");
+        // --- Debts Page Logic ---
+        function initDebtPage() {
+            document.getElementById('debt-date').value = getTodayDateString();
+            const debtForm = document.getElementById('debt-form');
+            debtForm.removeEventListener('submit', handleDebtSubmit); // Prevent multiple listeners
+            debtForm.addEventListener('submit', handleDebtSubmit);
+            
+            const debtTabs = document.getElementById('debt-tabs');
+            debtTabs.removeEventListener('click', handleTabClick);
+            debtTabs.addEventListener('click', handleTabClick);
+
+            const debtsPage = document.getElementById('debts-page');
+            debtsPage.removeEventListener('click', handleSettleDebt);
+            debtsPage.addEventListener('click', handleSettleDebt);
+
+            renderDebtCards();
+        }
+
+        function handleTabClick(e) {
+            if (e.target.tagName !== 'BUTTON') return;
+            const tab = e.target.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+            document.querySelectorAll('.debt-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `${tab}-panel`));
+        }
+
+        function renderDebtCards() {
+            const receivablesPanel = document.getElementById('receivables-panel');
+            const payablesPanel = document.getElementById('payables-panel');
+            if (!receivablesPanel || !payablesPanel) return;
+
+            const createCardHTML = (d) => {
+                const isReceivable = d.type === 'receivable';
+                return `
+                <div class="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <span class="p-3 rounded-full ${isReceivable ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">
+                            <i data-feather="${isReceivable ? 'arrow-down-left' : 'arrow-up-right'}"></i>
+                        </span>
+                        <div>
+                            <p class="font-bold text-slate-800">${d.partyName}</p>
+                            <p class="text-sm text-slate-500">${formatDate(d.date?.toDate())}</p>
+                        </div>
+                    </div>
+                    <div class="text-left flex-shrink-0">
+                        <p class="font-bold text-lg ${isReceivable ? 'text-emerald-600' : 'text-amber-600'}">${formatCurrency(d.amount)}</p>
+                        <button data-id="${d.id}" class="settle-debt-btn text-xs text-slate-500 hover:text-indigo-600 font-semibold p-1">تسديد وحذف</button>
+                    </div>
+                </div>`;
+            };
+            
+            receivablesPanel.innerHTML = allDebts.filter(d => d.type === 'receivable').map(createCardHTML).join('') || `<div class="text-center p-6 text-slate-500">لا توجد ديون مستحقة لك.</div>`;
+            payablesPanel.innerHTML = allDebts.filter(d => d.type === 'payable').map(createCardHTML).join('') || `<div class="text-center p-6 text-slate-500">لا توجد ديون مطلوبة منك.</div>`;
+            feather.replace();
+        }
+
+        async function handleDebtSubmit(e) {
+            e.preventDefault();
+            const feedbackEl = document.getElementById('debt-form-feedback');
+            const type = document.getElementById('debt-type').value;
+            const partyName = document.getElementById('debt-party').value;
+            const amount = parseFloat(document.getElementById('debt-amount').value);
+            const date = document.getElementById('debt-date').value;
+
+            if (!partyName || isNaN(amount) || amount <= 0 || !date) {
+                feedbackEl.textContent = "يرجى ملء جميع الحقول بشكل صحيح.";
+                feedbackEl.className = 'text-sm font-semibold text-red-600';
                 return;
             }
 
             try {
-                await addDoc(transactionsCollectionRef, { type, partyName, date: new Date(date), items, totalAmount, createdAt: serverTimestamp() });
-                alert(`تم حفظ وصل الـ${type === 'income' ? 'دخل' : 'صرف'} بنجاح!`);
-                showPage('dashboard-page');
-                window.location.hash = '#dashboard';
+                await addDoc(debtsCollectionRef, { type, partyName, amount, date: new Date(date), status: 'active', createdAt: serverTimestamp() });
+                feedbackEl.textContent = 'تم تسجيل الدين بنجاح!';
+                feedbackEl.className = 'text-sm font-semibold text-green-600';
+                e.target.reset();
+                document.getElementById('debt-date').value = getTodayDateString();
+                setTimeout(() => feedbackEl.textContent = '', 3000);
             } catch (error) {
-                console.error("Error adding document: ", error);
-                alert("حدث خطأ أثناء حفظ البيانات.");
+                console.error("Error adding debt: ", error);
+                feedbackEl.textContent = "حدث خطأ أثناء تسجيل الدين.";
+                feedbackEl.className = 'text-sm font-semibold text-red-600';
+            }
+        }
+        
+        async function handleSettleDebt(e) {
+            if (!e.target.classList.contains('settle-debt-btn')) return;
+            const debtId = e.target.dataset.id;
+            try {
+                e.target.disabled = true;
+                e.target.textContent = 'جار الحذف...';
+                const debtDocRef = doc(debtsCollectionRef, debtId);
+                await deleteDoc(debtDocRef);
+            } catch (error) {
+                console.error("Error settling debt: ", error);
+                alert('فشل في تسديد الدين.');
+                e.target.disabled = false;
+                e.target.textContent = 'تسديد وحذف';
             }
         }
 
-        document.getElementById('income-form').addEventListener('submit', (e) => handleFormSubmit(e, 'income'));
-        document.getElementById('expense-form').addEventListener('submit', (e) => handleFormSubmit(e, 'expense'));
-
         // --- Print Modal Logic ---
-        const printModal = document.getElementById('print-modal');
-        const printArea = document.getElementById('print-area');
-        
         document.querySelector('#app-container').addEventListener('click', (e) => {
-            // Print button
-            if (e.target.classList.contains('print-btn')) {
-                const transactionId = e.target.dataset.id;
-                const transaction = allTransactions.find(t => t.id === transactionId);
+            const printButton = e.target.closest('.print-btn');
+            if (printButton) {
+                const transaction = allTransactions.find(t => t.id === printButton.dataset.id);
                 if (transaction) {
                     generatePrintContent(transaction);
-                    printModal.classList.remove('hidden');
-                }
-            }
-            // Delete button
-            if (e.target.classList.contains('delete-btn') || (e.target.closest('.delete-btn') && e.target.closest('.delete-btn').classList.contains('delete-btn'))) {
-                const btn = e.target.classList.contains('delete-btn') ? e.target : e.target.closest('.delete-btn');
-                const transactionId = btn.dataset.id;
-                if (confirm('هل أنت متأكد أنك تريد حذف هذا السجل؟ لا يمكن التراجع عن هذه العملية.')) {
-                    handleDeleteTransaction(transactionId);
+                    document.getElementById('print-modal').classList.remove('hidden');
                 }
             }
         });
-
-        async function handleDeleteTransaction(transactionId) {
-            if (!transactionsCollectionRef || !transactionId) return;
-            try {
-                // حذف الوثيقة من Firestore
-                await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js")
-                    .then(({ deleteDoc, doc }) =>
-                        deleteDoc(doc(transactionsCollectionRef, transactionId))
-                    );
-            } catch (error) {
-                alert('حدث خطأ أثناء حذف السجل.');
-                console.error(error);
-            }
-        }
 
         function generatePrintContent(t) {
             const isIncome = t.type === 'income';
-            const itemsHtml = t.items.map(item => `
-                <tr class="border-b">
-                    <td class="py-2 px-4">${item.description}</td>
-                    <td class="py-2 px-4 text-center">${item.quantity}</td>
-                    <td class="py-2 px-4 text-center">${formatCurrency(item.price)}</td>
-                    <td class="py-2 px-4 text-center">${formatCurrency(item.total)}</td>
-                </tr>
-            `).join('');
-
-            printArea.innerHTML = `
-                <header class="flex justify-between items-start pb-6 border-b-2 mb-6">
-                    <div>
-                        <h1 class="text-4xl font-bold ${isIncome ? 'text-cyan-600' : 'text-rose-600'}">${isIncome ? 'وصل قبض' : 'وصل صرف'}</h1>
-                        <p class="text-gray-500 mt-2">رقم المرجع: ${t.id}</p>
-                    </div>
-                    <div class="text-left">
-                        <p class="font-bold text-lg">حساباتي</p>
-                        <p class="text-gray-600">تاريخ الإصدار: ${t.date.toDate ? formatDate(t.date.toDate()) : 'تاريخ غير صالح'}</p>
-                    </div>
-                </header>
-                <div class="mb-6">
-                    <p class="text-gray-600">${isIncome ? 'مستلم من السيد/السادة:' : 'يُصرف للسيد/السادة:'}</p>
-                    <p class="text-xl font-semibold">${t.partyName}</p>
-                </div>
-                <table class="w-full text-right mb-6">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="py-2 px-4 font-semibold">البيان</th>
-                            <th class="py-2 px-4 font-semibold text-center">الكمية</th>
-                            <th class="py-2 px-4 font-semibold text-center">سعر الوحدة</th>
-                            <th class="py-2 px-4 font-semibold text-center">المجموع</th>
-                        </tr>
-                    </thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
-                <footer class="flex justify-end mt-8">
-                    <div class="w-1/2">
-                        <div class="flex justify-between py-2 px-4 bg-gray-100 rounded-t-lg">
-                            <span class="font-semibold">المبلغ الإجمالي</span>
-                            <span class="font-semibold">${formatCurrency(t.totalAmount)}</span>
-                        </div>
-                        <div class="py-4 px-4 border-l border-r border-b rounded-b-lg">
-                            <p class="font-bold">المبلغ كتابةً:</p>
-                            <p class="text-gray-600">... سيتم إضافة تحويل الرقم إلى نص هنا ...</p>
-                        </div>
-                        <div class="mt-16 text-center">
-                            <p class="border-t pt-2">توقيع المستلم</p>
-                        </div>
-                    </div>
-                </footer>
-            `;
+            const itemsHtml = t.items.map(item => `<tr class="border-b"><td class="py-2 px-4">${item.description}</td><td class="py-2 px-4 text-center">${item.quantity}</td><td class="py-2 px-4 text-center">${formatCurrency(item.price)}</td><td class="py-2 px-4 text-center">${formatCurrency(item.total)}</td></tr>`).join('');
+            document.getElementById('print-area').innerHTML = `<header class="flex justify-between items-start pb-6 border-b-2 mb-6"><div><h1 class="text-4xl font-bold ${isIncome ? 'text-cyan-600' : 'text-rose-600'}">${isIncome ? 'وصل قبض' : 'وصل صرف'}</h1><p class="text-slate-500 mt-2">مرجع: ${t.id.substring(0,10)}</p></div><div class="text-left"><p class="font-bold text-lg">حساباتي</p><p class="text-slate-600">تاريخ: ${formatDate(t.date?.toDate())}</p></div></header><div class="mb-6"><p class="text-slate-600">${isIncome ? 'مستلم من:' : 'يُصرف إلى:'}</p><p class="text-xl font-semibold text-slate-800">${t.partyName}</p></div><table class="w-full text-right mb-6"><thead class="bg-slate-50"><tr><th class="py-2 px-4 font-semibold">البيان</th><th class="py-2 px-4 font-semibold text-center">الكمية</th><th class="py-2 px-4 font-semibold text-center">سعر الوحدة</th><th class="py-2 px-4 font-semibold text-center">المجموع</th></tr></thead><tbody>${itemsHtml}</tbody></table><footer class="flex justify-end mt-8"><div class="w-1/2"><div class="flex justify-between py-2 px-4 bg-slate-100 rounded-t-lg"><span class="font-semibold text-slate-800">المبلغ الإجمالي</span><span class="font-semibold text-slate-800">${formatCurrency(t.totalAmount)}</span></div><div class="py-4 px-4 border-l border-r border-b rounded-b-lg"><p class="font-bold">المبلغ كتابةً:</p><p class="text-slate-600">... قيد التطوير ...</p></div><div class="mt-16 text-center"><p class="border-t pt-2 text-slate-500">توقيع المستلم</p></div></div></footer>`;
         }
         
-        document.getElementById('close-print-modal-btn').addEventListener('click', () => printModal.classList.add('hidden'));
+        document.getElementById('close-print-modal-btn').addEventListener('click', () => document.getElementById('print-modal').classList.add('hidden'));
 
         // --- Initial App Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            feather.replace();
-        });
-
+        document.addEventListener('DOMContentLoaded', () => { feather.replace(); });
     </script>
 </body>
 </html>
