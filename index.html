@@ -100,6 +100,10 @@
             transform: translateY(-2px);
             box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
         }
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
         .btn-primary { background-color: #4f46e5; color: white; }
         .btn-primary:hover { background-color: #4338ca; }
         .btn-secondary { background-color: #e2e8f0; color: #1e293b; }
@@ -144,6 +148,12 @@
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(30px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         
         /* Print Styles */
@@ -192,6 +202,7 @@
                     <a href="#dashboard" class="nav-link active"><i data-feather="home"></i><span>لوحة التحكم</span></a>
                     <a href="#income" class="nav-link"><i data-feather="arrow-down-circle"></i><span>وصل دخل</span></a>
                     <a href="#expense" class="nav-link"><i data-feather="arrow-up-circle"></i><span>وصل صرف</span></a>
+                    <a href="#purchase-order" class="nav-link"><i data-feather="shopping-cart"></i><span>وصل مشتريات</span></a>
                     <a href="#debts" class="nav-link"><i data-feather="list"></i><span>إدارة الديون</span></a>
                     <a href="#transactions" class="nav-link"><i data-feather="archive"></i><span>السجلات</span></a>
                 </nav>
@@ -219,9 +230,10 @@
                     </div>
                 </div>
 
-                <!-- Page: New Income/Expense -->
+                <!-- Page: New Income/Expense/Purchase Order -->
                 <div id="income-page" class="page"></div>
                 <div id="expense-page" class="page"></div>
+                <div id="purchase-order-page" class="page"></div>
 
                 <!-- Page: Debts -->
                 <div id="debts-page" class="page">
@@ -265,13 +277,17 @@
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
+    <!-- Confirmation Modal (for transaction deletion) -->
     <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50 modal-backdrop">
         <div class="bg-white w-full max-w-sm mx-auto rounded-lg shadow-lg p-6 text-center modal-content">
             <h2 id="confirmation-title" class="text-xl font-bold text-slate-800 mb-2">هل أنت متأكد؟</h2>
             <p id="confirmation-message" class="text-slate-600 mb-6">لا يمكن التراجع عن هذا الإجراء.</p>
+            <div id="confirmation-error" class="text-red-500 text-sm mb-4 hidden"></div>
             <div class="flex justify-center gap-4">
-                <button id="confirm-btn" class="btn btn-danger">تأكيد الحذف</button>
+                <button id="confirm-btn" class="btn btn-danger">
+                    <span class="btn-text">تأكيد الحذف</span>
+                    <i data-feather="loader" class="spinner hidden"></i>
+                </button>
                 <button id="cancel-btn" class="btn btn-secondary">إلغاء</button>
             </div>
         </div>
@@ -309,8 +325,9 @@
                     </div>
                     <div id="payment-form-feedback" class="text-sm text-red-600 mt-2"></div>
                 </form>
-                <div class="border-t pt-4 text-center">
+                <div id="debt-modal-actions" class="border-t pt-4 flex justify-between items-center">
                      <button id="settle-debt-btn" class="btn btn-primary"><i data-feather="check-circle"></i>تسوية وإغلاق الدين</button>
+                     <button id="delete-debt-btn" class="text-sm font-semibold text-red-600 hover:text-red-500 transition-colors duration-150">حذف الدين نهائياً</button>
                 </div>
             </div>
         </div>
@@ -320,7 +337,7 @@
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, where, deleteDoc, doc, updateDoc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, where, deleteDoc, doc, updateDoc, writeBatch, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -363,7 +380,6 @@
         const userEmailDisplay = document.getElementById('user-email-display');
         const confirmationModal = document.getElementById('confirmation-modal');
         const debtDetailsModal = document.getElementById('debt-details-modal');
-        // New Auth UI Elements
         const authForm = document.getElementById('auth-form');
         const authTitle = document.getElementById('auth-title');
         const authSubtitle = document.getElementById('auth-subtitle');
@@ -401,7 +417,7 @@
 
         function toggleAuthMode() {
             isRegisterMode = !isRegisterMode;
-            authError.classList.add('hidden'); // Hide any previous errors
+            authError.classList.add('hidden');
             authForm.reset();
             if (isRegisterMode) {
                 authTitle.textContent = 'إنشاء حساب جديد';
@@ -424,28 +440,13 @@
             authError.classList.add('hidden');
             const email = emailInput.value;
             const password = passwordInput.value;
-
             if (isRegisterMode) {
-                // Registration logic
-                if (password.length < 6) {
-                    authError.textContent = "كلمة المرور يجب أن تكون 6 أحرف على الأقل.";
-                    authError.classList.remove('hidden');
-                    return;
-                }
-                try {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                } catch (error) {
-                    authError.textContent = "فشل التسجيل. قد يكون البريد مستخدماً.";
-                    authError.classList.remove('hidden');
-                }
+                if (password.length < 6) { authError.textContent = "كلمة المرور يجب أن تكون 6 أحرف على الأقل."; authError.classList.remove('hidden'); return; }
+                try { await createUserWithEmailAndPassword(auth, email, password); } 
+                catch (error) { authError.textContent = "فشل التسجيل. قد يكون البريد مستخدماً."; authError.classList.remove('hidden'); }
             } else {
-                // Login logic
-                try {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } catch (error) {
-                    authError.textContent = "فشل الدخول. تحقق من بياناتك.";
-                    authError.classList.remove('hidden');
-                }
+                try { await signInWithEmailAndPassword(auth, email, password); } 
+                catch (error) { authError.textContent = "فشل الدخول. تحقق من بياناتك."; authError.classList.remove('hidden'); }
             }
         });
 
@@ -455,7 +456,8 @@
         function showPage(pageId) {
             pages.forEach(page => page.classList.toggle('active', page.id === pageId));
             navLinks.forEach(link => link.classList.toggle('active', link.hash === `#${pageId.replace('-page', '')}`));
-            if (pageId === 'income-page' || pageId === 'expense-page') { renderTransactionForm(pageId.split('-')[0]); } 
+            if (pageId === 'income-page' || pageId === 'expense-page') { renderTransactionForm(pageId.split('-')[0]); }
+            else if (pageId === 'purchase-order-page') { renderPurchaseOrderForm(); } 
             else if (pageId === 'debts-page') { initDebtPage(); }
             feather.replace();
         }
@@ -505,12 +507,45 @@
             document.getElementById('total-payables').textContent = formatCurrency(totalPayables);
 
             const recentList = document.getElementById('recent-transactions-list');
-            recentList.innerHTML = allTransactions.length === 0 ? '<p class="text-center text-slate-500 py-4">لا توجد عمليات لعرضها.</p>' : allTransactions.slice(0, 5).map(t => { const isIncome = t.type === 'income'; return `<div class="flex justify-between items-center p-3 rounded-lg bg-slate-50"><div class="flex items-center gap-3"><span class="p-2 rounded-full ${isIncome ? 'bg-cyan-100 text-cyan-600' : 'bg-rose-100 text-rose-600'}"><i data-feather="${isIncome ? 'arrow-down' : 'arrow-up'}" class="w-4 h-4"></i></span><div><p class="font-bold text-slate-700">${isIncome ? 'دخل من' : 'صرف إلى'} ${t.partyName}</p><p class="text-sm text-slate-500">${formatDate(t.date?.toDate())}</p></div></div><p class="font-bold text-lg ${isIncome ? 'text-cyan-600' : 'text-rose-600'}">${formatCurrency(t.totalAmount)}</p></div>`; }).join('');
+            recentList.innerHTML = allTransactions.length === 0 ? '<p class="text-center text-slate-500 py-4">لا توجد عمليات لعرضها.</p>' : allTransactions.slice(0, 5).map(t => {
+                let icon, color, text;
+                switch(t.type) {
+                    case 'income':
+                        icon = 'arrow-down'; color = 'cyan'; text = `دخل من ${t.partyName}`;
+                        break;
+                    case 'expense':
+                        icon = 'arrow-up'; color = 'rose'; text = `صرف إلى ${t.partyName}`;
+                        break;
+                    case 'purchase_order':
+                        icon = 'shopping-cart'; color = 'slate'; text = `وصل شراء من ${t.partyName}`;
+                        break;
+                    default:
+                        icon = 'file-text'; color = 'gray'; text = `عملية غير معروفة`;
+                }
+                const amountText = (t.type === 'purchase_order' && !t.settings.showPrice) ? '' : `<p class="font-bold text-lg text-${color}-600">${formatCurrency(t.totalAmount)}</p>`;
+                return `<div class="flex justify-between items-center p-3 rounded-lg bg-slate-50"><div class="flex items-center gap-3"><span class="p-2 rounded-full bg-${color}-100 text-${color}-600"><i data-feather="${icon}" class="w-4 h-4"></i></span><div><p class="font-bold text-slate-700">${text}</p><p class="text-sm text-slate-500">${formatDate(t.date?.toDate())}</p></div></div>${amountText}</div>`;
+            }).join('');
         }
 
         function renderTransactionsTable() {
             const tableBody = document.getElementById('transactions-table-body');
-            tableBody.innerHTML = allTransactions.length === 0 ? '<tr><td colspan="5" class="text-center p-6 text-slate-500">لا توجد سجلات.</td></tr>' : allTransactions.map(t => { const isIncome = t.type === 'income'; return `<tr class="border-b hover:bg-slate-50"><td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-semibold ${isIncome ? 'bg-cyan-100 text-cyan-800' : 'bg-rose-100 text-rose-800'}">${isIncome ? 'دخل' : 'صرف'}</span></td><td class="p-4 text-slate-700">${formatDate(t.date?.toDate())}</td><td class="p-4 text-slate-700 font-medium">${t.partyName}</td><td class="p-4 text-slate-800 font-bold">${formatCurrency(t.totalAmount)}</td><td class="p-4 text-center"><button data-id="${t.id}" class="print-btn text-indigo-600 hover:underline font-semibold">طباعة</button><button data-id="${t.id}" data-is-debt-payment="${t.isDebtPayment || false}" data-related-debt-id="${t.relatedDebtId || ''}" data-amount="${t.totalAmount}" class="delete-transaction-btn text-red-600 hover:underline font-semibold mr-4">حذف</button></td></tr>`; }).join('');
+            tableBody.innerHTML = allTransactions.length === 0 ? '<tr><td colspan="5" class="text-center p-6 text-slate-500">لا توجد سجلات.</td></tr>' : allTransactions.map(t => {
+                let typeText, typeColor, amountText;
+                switch(t.type) {
+                    case 'income':
+                        typeText = 'دخل'; typeColor = 'cyan'; amountText = formatCurrency(t.totalAmount);
+                        break;
+                    case 'expense':
+                        typeText = 'صرف'; typeColor = 'rose'; amountText = formatCurrency(t.totalAmount);
+                        break;
+                    case 'purchase_order':
+                        typeText = 'وصل شراء'; typeColor = 'slate'; amountText = (t.settings && t.settings.showPrice) ? formatCurrency(t.totalAmount) : '---';
+                        break;
+                    default:
+                        typeText = 'غير معروف'; typeColor = 'gray'; amountText = '---';
+                }
+                return `<tr class="border-b hover:bg-slate-50"><td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-semibold bg-${typeColor}-100 text-${typeColor}-800">${typeText}</span></td><td class="p-4 text-slate-700">${formatDate(t.date?.toDate())}</td><td class="p-4 text-slate-700 font-medium">${t.partyName}</td><td class="p-4 text-slate-800 font-bold">${amountText}</td><td class="p-4 text-center"><button data-id="${t.id}" class="print-btn text-indigo-600 hover:underline font-semibold">طباعة</button><button data-id="${t.id}" data-is-debt-payment="${t.isDebtPayment || false}" data-related-debt-id="${t.relatedDebtId || ''}" data-amount="${t.totalAmount}" class="delete-transaction-btn text-red-600 hover:underline font-semibold mr-4">حذف</button></td></tr>`;
+            }).join('');
         }
         
         function renderChart() {
@@ -532,6 +567,165 @@
         function resetTransactionForm(type) { const form = document.getElementById(`${type}-form`); if (!form) return; form.reset(); const itemsBody = document.getElementById(`${type}-items-body`); itemsBody.innerHTML = ''; itemsBody.appendChild(createItemRow(type)); updateFormTotal(type); document.getElementById(`${type}-date`).value = getTodayDateString(); feather.replace(); }
         async function handleTransactionSubmit(event, type) { event.preventDefault(); const form = event.target; const partyName = form.querySelector(`#${type}-party`).value; const date = form.querySelector(`#${type}-date`).value; const items = Array.from(form.querySelectorAll('.item-row')).map(row => ({ description: row.querySelector('.description').value, quantity: parseFloat(row.querySelector('.quantity').value), price: parseFloat(row.querySelector('.price').value), total: (parseFloat(row.querySelector('.quantity').value) || 0) * (parseFloat(row.querySelector('.price').value) || 0) })); if (items.some(it => !it.description || !it.quantity || isNaN(it.price))) { alert("يرجى ملء جميع حقول البنود."); return; } const totalAmount = items.reduce((sum, item) => sum + item.total, 0); try { await addDoc(transactionsCollectionRef, { type, partyName, date: new Date(date), items, totalAmount, createdAt: serverTimestamp() }); showPage('dashboard-page'); window.location.hash = '#dashboard'; } catch (error) { console.error("Error adding document: ", error); alert("حدث خطأ أثناء الحفظ."); } }
 
+        // --- Purchase Order Logic ---
+        function renderPurchaseOrderForm() {
+            const page = document.getElementById('purchase-order-page');
+            page.innerHTML = `
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">إصدار وصل مشتريات</h1>
+                <p class="text-slate-500 mb-8">هذه الوصولات لا تؤثر على الرصيد المالي العام.</p>
+                <form id="purchase-order-form" class="bg-white p-6 md:p-8 rounded-xl shadow-sm space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <input type="text" id="po-party" class="form-input" placeholder="اسم المجهز / المحل" required>
+                        <input type="date" id="po-date" class="form-input" required>
+                    </div>
+                    <div class="border-t pt-6">
+                        <h3 class="font-bold text-lg mb-2 text-slate-700">تخصيص الحقول</h3>
+                        <div id="po-settings" class="flex flex-wrap gap-x-6 gap-y-2 mb-4">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="po-show-quantity" class="form-checkbox rounded" checked><span>إظهار الكمية</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="po-show-price" class="form-checkbox rounded" checked><span>إظهار السعر</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="po-show-notes" class="form-checkbox rounded"><span>إظهار الملاحظات</span></label>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table id="po-table" class="w-full min-w-[600px]">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="p-3 text-sm font-semibold text-right text-slate-600">البيان</th>
+                                        <th class="p-3 text-sm font-semibold text-center w-28 text-slate-600 col-quantity">الكمية</th>
+                                        <th class="p-3 text-sm font-semibold text-center w-36 text-slate-600 col-price">سعر الوحدة</th>
+                                        <th class="p-3 text-sm font-semibold text-center w-40 text-slate-600 col-price">المجموع</th>
+                                        <th class="p-3 text-sm font-semibold text-right text-slate-600 col-notes hidden">ملاحظات</th>
+                                        <th class="w-12"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="po-items-body"></tbody>
+                            </table>
+                        </div>
+                        <button type="button" id="add-po-item-btn" class="btn btn-secondary mt-4"><i data-feather="plus"></i> إضافة بند</button>
+                    </div>
+                    <div class="border-t pt-6 flex justify-between items-center">
+                        <div id="po-total-display" class="text-xl font-bold text-slate-800"><span>الإجمالي:</span> <span id="po-total-amount">0.00 د.ع</span></div>
+                        <button type="submit" class="btn btn-primary">حفظ الوصل</button>
+                    </div>
+                </form>
+            `;
+            setupPurchaseOrderForm();
+        }
+
+        function setupPurchaseOrderForm() {
+            const form = document.getElementById('purchase-order-form');
+            form.addEventListener('submit', handlePurchaseOrderSubmit);
+            document.getElementById('add-po-item-btn').addEventListener('click', () => { document.getElementById('po-items-body').appendChild(createPOItemRow()); feather.replace(); });
+            
+            // Settings Listeners
+            const settings = ['quantity', 'price', 'notes'];
+            settings.forEach(setting => {
+                document.getElementById(`po-show-${setting}`).addEventListener('change', updatePOTableVisibility);
+            });
+
+            resetPurchaseOrderForm();
+        }
+
+        function updatePOTableVisibility() {
+            const showQuantity = document.getElementById('po-show-quantity').checked;
+            const showPrice = document.getElementById('po-show-price').checked;
+            const showNotes = document.getElementById('po-show-notes').checked;
+            
+            document.querySelectorAll('#po-table .col-quantity').forEach(el => el.classList.toggle('hidden', !showQuantity));
+            document.querySelectorAll('#po-table .col-price').forEach(el => el.classList.toggle('hidden', !showPrice));
+            document.querySelectorAll('#po-table .col-notes').forEach(el => el.classList.toggle('hidden', !showNotes));
+            document.getElementById('po-total-display').classList.toggle('hidden', !showPrice);
+            updatePOTotal();
+        }
+
+        function createPOItemRow() {
+            const row = document.createElement('tr');
+            row.className = 'po-item-row border-b';
+            row.innerHTML = `
+                <td class="p-2"><input type="text" class="form-input description" placeholder="وصف البند" required></td>
+                <td class="p-2 col-quantity"><input type="number" class="form-input quantity" value="1" min="1"></td>
+                <td class="p-2 col-price"><input type="number" class="form-input price" placeholder="0.00" min="0" step="any"></td>
+                <td class="p-2 col-price"><input type="text" class="form-input bg-slate-100 text-center font-semibold total" readonly></td>
+                <td class="p-2 col-notes hidden"><input type="text" class="form-input notes" placeholder="ملاحظات..."></td>
+                <td class="p-2 text-center"><button type="button" class="remove-item-btn text-slate-400 hover:text-red-500 p-2 rounded-full"><i data-feather="trash-2" class="w-5 h-5"></i></button></td>
+            `;
+            row.querySelector('.remove-item-btn').addEventListener('click', () => { if (row.parentElement.children.length > 1) { row.remove(); updatePOTotal(); } });
+            row.querySelectorAll('.quantity, .price').forEach(input => input.addEventListener('input', () => updatePORowTotal(row)));
+            updatePOTableVisibility(); // Ensure new row respects current visibility
+            return row;
+        }
+
+        function updatePORowTotal(row) {
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            row.querySelector('.total').value = formatCurrency(quantity * price);
+            updatePOTotal();
+        }
+
+        function updatePOTotal() {
+            let totalAmount = 0;
+            if (document.getElementById('po-show-price').checked) {
+                document.querySelectorAll('#purchase-order-form .po-item-row').forEach(row => {
+                    totalAmount += (parseFloat(row.querySelector('.quantity').value) || 0) * (parseFloat(row.querySelector('.price').value) || 0);
+                });
+            }
+            document.getElementById('po-total-amount').textContent = formatCurrency(totalAmount);
+        }
+
+        function resetPurchaseOrderForm() {
+            const form = document.getElementById('purchase-order-form');
+            if (!form) return;
+            form.reset();
+            const itemsBody = document.getElementById('po-items-body');
+            itemsBody.innerHTML = '';
+            itemsBody.appendChild(createPOItemRow());
+            updatePOTableVisibility();
+            updatePOTotal();
+            document.getElementById('po-date').value = getTodayDateString();
+            feather.replace();
+        }
+
+        async function handlePurchaseOrderSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const partyName = form.querySelector('#po-party').value;
+            const date = form.querySelector('#po-date').value;
+            
+            const settings = {
+                showQuantity: form.querySelector('#po-show-quantity').checked,
+                showPrice: form.querySelector('#po-show-price').checked,
+                showNotes: form.querySelector('#po-show-notes').checked,
+            };
+
+            const items = Array.from(form.querySelectorAll('.po-item-row')).map(row => ({
+                description: row.querySelector('.description').value,
+                quantity: settings.showQuantity ? (parseFloat(row.querySelector('.quantity').value) || 1) : null,
+                price: settings.showPrice ? (parseFloat(row.querySelector('.price').value) || 0) : null,
+                notes: settings.showNotes ? row.querySelector('.notes').value : null,
+                total: settings.showPrice ? ((parseFloat(row.querySelector('.quantity').value) || 0) * (parseFloat(row.querySelector('.price').value) || 0)) : 0
+            }));
+
+            if (items.some(it => !it.description)) { alert("يرجى ملء خانة البيان لكل بند."); return; }
+            
+            const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+
+            try {
+                await addDoc(transactionsCollectionRef, {
+                    type: 'purchase_order',
+                    partyName,
+                    date: new Date(date),
+                    items,
+                    totalAmount,
+                    settings, // Save customization settings
+                    createdAt: serverTimestamp()
+                });
+                showPage('dashboard-page');
+                window.location.hash = '#dashboard';
+            } catch (error) {
+                console.error("Error adding purchase order: ", error);
+                alert("حدث خطأ أثناء حفظ وصل المشتريات.");
+            }
+        }
+
         // --- Debts Page Logic ---
         function initDebtPage() { document.getElementById('debt-date').value = getTodayDateString(); const debtForm = document.getElementById('debt-form'); debtForm.removeEventListener('submit', handleDebtSubmit); debtForm.addEventListener('submit', handleDebtSubmit); const debtTabs = document.getElementById('debt-tabs'); debtTabs.removeEventListener('click', handleTabClick); debtTabs.addEventListener('click', handleTabClick); const debtsPage = document.getElementById('debts-page'); debtsPage.removeEventListener('click', openDebtDetailsModal); debtsPage.addEventListener('click', openDebtDetailsModal); renderDebtCards(); }
         function handleTabClick(e) { if (e.target.tagName !== 'BUTTON') return; const tab = e.target.dataset.tab; document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab)); document.querySelectorAll('.debt-panel').forEach(panel => panel.classList.toggle('hidden', panel.id !== `${tab}-panel`)); }
@@ -546,40 +740,25 @@
                 const isDebtPayment = deleteButton.dataset.isDebtPayment === 'true';
                 const relatedDebtId = deleteButton.dataset.relatedDebtId;
                 const amount = parseFloat(deleteButton.dataset.amount);
-
                 let message = 'هل أنت متأكد من حذف هذه العملية؟';
-                if (isDebtPayment) {
-                    message += ' سيؤدي هذا إلى التراجع عن دفعة الدين المرتبطة بها وتنشيط الدين من جديد.';
-                }
-
-                showConfirmationModal(message, async () => { // Make callback async
+                if (isDebtPayment) { message += ' سيؤدي هذا إلى التراجع عن دفعة الدين المرتبطة بها وتنشيط الدين من جديد.'; }
+                showConfirmationModal(message, async () => {
                     try {
                         const batch = writeBatch(db);
                         const transactionDocRef = doc(transactionsCollectionRef, transactionId);
-
-                        // If it's a debt payment, fetch the debt doc to update it correctly
                         if (isDebtPayment && relatedDebtId) {
                             const debtRef = doc(debtsCollectionRef, relatedDebtId);
-                            const debtSnap = await getDoc(debtRef); // Fetch the doc directly
+                            const debtSnap = await getDoc(debtRef);
                             if (debtSnap.exists()) {
                                 const debtData = debtSnap.data();
                                 const currentPaid = debtData.paidAmount || 0;
                                 const newPaidAmount = Math.max(0, currentPaid - amount);
-                                batch.update(debtRef, {
-                                    paidAmount: newPaidAmount,
-                                    status: 'active' // Always re-activate the debt when a payment is deleted
-                                });
+                                batch.update(debtRef, { paidAmount: newPaidAmount, status: 'active' });
                             }
                         }
-                        
-                        // Delete the transaction itself
                         batch.delete(transactionDocRef);
-
                         await batch.commit();
-                    } catch (error) {
-                        console.error("Error deleting transaction and updating debt: ", error);
-                        alert("فشل حذف العملية.");
-                    }
+                    } catch (error) { console.error("Error deleting transaction and updating debt: ", error); alert("فشل حذف العملية."); }
                 });
             }
         });
@@ -587,13 +766,41 @@
         // --- Confirmation Modal Logic ---
         const confirmBtn = document.getElementById('confirm-btn');
         const cancelBtn = document.getElementById('cancel-btn');
+        const confirmationError = document.getElementById('confirmation-error');
         let onConfirmCallback = null;
         function showConfirmationModal(message, onConfirm) {
             document.getElementById('confirmation-message').textContent = message;
             onConfirmCallback = onConfirm;
+            confirmationError.classList.add('hidden');
+            confirmBtn.disabled = false;
+            cancelBtn.disabled = false;
+            confirmBtn.querySelector('.btn-text').classList.remove('hidden');
+            confirmBtn.querySelector('.spinner').classList.add('hidden');
             confirmationModal.classList.remove('hidden');
+            feather.replace();
         }
-        confirmBtn.addEventListener('click', () => { if (onConfirmCallback) { onConfirmCallback(); } confirmationModal.classList.add('hidden'); });
+        confirmBtn.addEventListener('click', async () => {
+            if (onConfirmCallback) {
+                confirmBtn.disabled = true;
+                cancelBtn.disabled = true;
+                confirmBtn.querySelector('.btn-text').classList.add('hidden');
+                confirmBtn.querySelector('.spinner').classList.remove('hidden');
+                confirmationError.classList.add('hidden');
+                try {
+                    await onConfirmCallback();
+                    confirmationModal.classList.add('hidden');
+                } catch (error) {
+                    console.error("Confirmation callback error:", error);
+                    confirmationError.textContent = 'حدث خطأ. يرجى المحاولة مرة أخرى.';
+                    confirmationError.classList.remove('hidden');
+                } finally {
+                    confirmBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    confirmBtn.querySelector('.btn-text').classList.remove('hidden');
+                    confirmBtn.querySelector('.spinner').classList.add('hidden');
+                }
+            }
+        });
         cancelBtn.addEventListener('click', () => { confirmationModal.classList.add('hidden'); });
 
         // --- Debt Details Modal Logic ---
@@ -629,8 +836,7 @@
             document.getElementById('payment-amount').max = remaining > 0 ? remaining : 0;
             document.getElementById('payment-amount').value = remaining > 0 ? remaining : 0;
             
-            // Disable payment form and settle button if fully paid
-            const isSettled = remaining <= 0.001; // Use a small tolerance for floating point
+            const isSettled = remaining <= 0.001;
             document.getElementById('add-payment-form').style.display = isSettled ? 'none' : 'block';
             document.getElementById('settle-debt-btn').style.display = isSettled ? 'none' : 'block';
 
@@ -639,10 +845,7 @@
                 ? '<p class="text-center text-slate-500 py-4">لا توجد دفعات مسجلة.</p>'
                 : currentDebtData.payments.sort((a,b) => (b.date?.toDate() || 0) - (a.date?.toDate() || 0)).map(p => `
                     <div class="flex justify-between items-center bg-white p-3 rounded-md">
-                        <div>
-                            <p class="font-semibold text-slate-700">${formatCurrency(p.amount)}</p>
-                            <p class="text-xs text-slate-500">${formatDate(p.date?.toDate())}</p>
-                        </div>
+                        <div><p class="font-semibold text-slate-700">${formatCurrency(p.amount)}</p><p class="text-xs text-slate-500">${formatDate(p.date?.toDate())}</p></div>
                         <p class="text-xs text-slate-400">مرتبط بعملية مالية</p>
                     </div>
                 `).join('');
@@ -652,88 +855,126 @@
         async function processPayment(debtId, amount, date) {
             const feedbackEl = document.getElementById('payment-form-feedback');
             feedbackEl.textContent = '';
-            if (isNaN(amount) || amount <= 0 || !date) {
-                feedbackEl.textContent = 'الرجاء إدخال مبلغ وتاريخ صحيحين.';
-                return false;
-            }
+            if (isNaN(amount) || amount <= 0 || !date) { feedbackEl.textContent = 'الرجاء إدخال مبلغ وتاريخ صحيحين.'; return false; }
 
             const debtDocRef = doc(debtsCollectionRef, debtId);
             const totalPaidSoFar = currentDebtData.payments.reduce((sum, p) => sum + p.amount, 0);
             const remaining = currentDebtData.debt.amount - totalPaidSoFar;
             
-            if (amount > remaining + 0.001) {
-                feedbackEl.textContent = 'مبلغ الدفعة أكبر من المبلغ المتبقي.';
-                return false;
-            }
+            if (amount > remaining + 0.001) { feedbackEl.textContent = 'مبلغ الدفعة أكبر من المبلغ المتبقي.'; return false; }
 
             try {
                 const batch = writeBatch(db);
-                
                 const transactionType = currentDebtData.debt.type === 'receivable' ? 'income' : 'expense';
-                const transactionData = {
-                    type: transactionType,
-                    partyName: currentDebtData.debt.partyName,
-                    date: new Date(date),
-                    items: [{ description: `دفعة دين - ${currentDebtData.debt.partyName}`, quantity: 1, price: amount, total: amount }],
-                    totalAmount: amount,
-                    createdAt: serverTimestamp(),
-                    isDebtPayment: true,
-                    relatedDebtId: debtId,
-                };
+                const transactionData = { type: transactionType, partyName: currentDebtData.debt.partyName, date: new Date(date), items: [{ description: `دفعة دين - ${currentDebtData.debt.partyName}`, quantity: 1, price: amount, total: amount }], totalAmount: amount, createdAt: serverTimestamp(), isDebtPayment: true, relatedDebtId: debtId, };
                 const transactionRef = doc(collection(db, transactionsCollectionRef.path));
                 batch.set(transactionRef, transactionData);
 
                 const newTotalPaid = totalPaidSoFar + amount;
                 const isSettled = Math.abs(currentDebtData.debt.amount - newTotalPaid) < 0.001;
-                batch.update(debtDocRef, {
-                    paidAmount: newTotalPaid,
-                    status: isSettled ? 'settled' : 'active'
-                });
+                batch.update(debtDocRef, { paidAmount: newTotalPaid, status: isSettled ? 'settled' : 'active' });
 
                 const paymentRef = doc(collection(db, `${debtDocRef.path}/payments`));
                 batch.set(paymentRef, { amount, date: new Date(date), createdAt: serverTimestamp(), relatedTransactionId: transactionRef.id });
 
                 await batch.commit();
 
-                if (isSettled) {
-                    debtDetailsModal.classList.add('hidden');
-                }
+                if (isSettled) { debtDetailsModal.classList.add('hidden'); }
                 document.getElementById('add-payment-form').reset();
                 document.getElementById('payment-date').value = getTodayDateString();
                 return true;
-            } catch (error) {
-                console.error("Error processing payment: ", error);
-                feedbackEl.textContent = 'حدث خطأ أثناء معالجة الدفعة.';
-                return false;
-            }
+            } catch (error) { console.error("Error processing payment: ", error); feedbackEl.textContent = 'حدث خطأ أثناء معالجة الدفعة.'; return false; }
         }
 
-        document.getElementById('add-payment-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const debtId = document.getElementById('payment-debt-id').value;
-            const amount = parseFloat(document.getElementById('payment-amount').value);
-            const date = document.getElementById('payment-date').value;
-            await processPayment(debtId, amount, date);
-        });
+        document.getElementById('add-payment-form').addEventListener('submit', async (e) => { e.preventDefault(); const debtId = document.getElementById('payment-debt-id').value; const amount = parseFloat(document.getElementById('payment-amount').value); const date = document.getElementById('payment-date').value; await processPayment(debtId, amount, date); });
+        document.getElementById('settle-debt-btn').addEventListener('click', async (e) => { e.target.disabled = true; const debtId = document.getElementById('payment-debt-id').value; const totalPaidSoFar = currentDebtData.payments.reduce((sum, p) => sum + p.amount, 0); const remainingAmount = currentDebtData.debt.amount - totalPaidSoFar; const date = getTodayDateString(); if (remainingAmount > 0) { await processPayment(debtId, remainingAmount, date); } e.target.disabled = false; });
         
-        document.getElementById('settle-debt-btn').addEventListener('click', async (e) => {
-            e.target.disabled = true;
+        async function handleDeleteDebt() {
             const debtId = document.getElementById('payment-debt-id').value;
-            const totalPaidSoFar = currentDebtData.payments.reduce((sum, p) => sum + p.amount, 0);
-            const remainingAmount = currentDebtData.debt.amount - totalPaidSoFar;
-            const date = getTodayDateString();
+            if (!debtId) return;
+
+            const deleteBtn = document.getElementById('delete-debt-btn');
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'جار الحذف...';
             
-            if (remainingAmount > 0) {
-                await processPayment(debtId, remainingAmount, date);
+            try {
+                const batch = writeBatch(db);
+                const debtRef = doc(debtsCollectionRef, debtId);
+                
+                const relatedTransactions = allTransactions.filter(t => t.isDebtPayment && t.relatedDebtId === debtId);
+                relatedTransactions.forEach(t => {
+                    batch.delete(doc(transactionsCollectionRef, t.id));
+                });
+
+                const paymentsCollectionRef = collection(db, `${debtsCollectionRef.path}/${debtId}/payments`);
+                const paymentsSnap = await getDocs(paymentsCollectionRef);
+                paymentsSnap.forEach(paymentDoc => {
+                    batch.delete(paymentDoc.ref);
+                });
+
+                batch.delete(debtRef);
+                
+                await batch.commit();
+                debtDetailsModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Error completely deleting debt:", error);
+                alert("حدث خطأ أثناء حذف الدين.");
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'حذف الدين نهائياً';
             }
-            e.target.disabled = false;
-        });
+        }
+        document.getElementById('delete-debt-btn').addEventListener('click', handleDeleteDebt);
 
         document.getElementById('close-debt-modal-btn').addEventListener('click', () => { debtDetailsModal.classList.add('hidden'); if(debtPaymentsUnsubscribe) debtPaymentsUnsubscribe(); });
 
         // --- Print Modal Logic ---
         document.querySelector('#app-container').addEventListener('click', (e) => { const printButton = e.target.closest('.print-btn'); if (printButton) { const transaction = allTransactions.find(t => t.id === printButton.dataset.id); if (transaction) { generatePrintContent(transaction); document.getElementById('print-modal').classList.remove('hidden'); } } });
-        function generatePrintContent(t) { const isIncome = t.type === 'income'; const itemsHtml = t.items.map(item => `<tr class="border-b"><td class="py-2 px-4">${item.description}</td><td class="py-2 px-4 text-center">${item.quantity}</td><td class="py-2 px-4 text-center">${formatCurrency(item.price)}</td><td class="py-2 px-4 text-center">${formatCurrency(item.total)}</td></tr>`).join(''); document.getElementById('print-area').innerHTML = `<header class="flex justify-between items-start pb-6 border-b-2 mb-6"><div><h1 class="text-4xl font-bold ${isIncome ? 'text-cyan-600' : 'text-rose-600'}">${isIncome ? 'وصل قبض' : 'وصل صرف'}</h1><p class="text-slate-500 mt-2">مرجع: ${t.id.substring(0,10)}</p></div><div class="text-left"><p class="font-bold text-lg">حساباتي</p><p class="text-slate-600">تاريخ: ${formatDate(t.date?.toDate())}</p></div></header><div class="mb-6"><p class="text-slate-600">${isIncome ? 'مستلم من:' : 'يُصرف إلى:'}</p><p class="text-xl font-semibold text-slate-800">${t.partyName}</p></div><table class="w-full text-right mb-6"><thead class="bg-slate-50"><tr><th class="py-2 px-4 font-semibold">البيان</th><th class="py-2 px-4 font-semibold text-center">الكمية</th><th class="py-2 px-4 font-semibold text-center">سعر الوحدة</th><th class="py-2 px-4 font-semibold text-center">المجموع</th></tr></thead><tbody>${itemsHtml}</tbody></table><footer class="flex justify-end mt-8"><div class="w-1/2"><div class="flex justify-between py-2 px-4 bg-slate-100 rounded-t-lg"><span class="font-semibold text-slate-800">المبلغ الإجمالي</span><span class="font-semibold text-slate-800">${formatCurrency(t.totalAmount)}</span></div><div class="py-4 px-4 border-l border-r border-b rounded-b-lg"><p class="font-bold">المبلغ كتابةً:</p><p class="text-slate-600">... قيد التطوير ...</p></div><div class="mt-16 text-center"><p class="border-t pt-2 text-slate-500">توقيع المستلم</p></div></div></footer>`; }
+        
+        function generatePrintContent(t) {
+            let title, headerColor, itemsHtml, footerHtml;
+            
+            if (t.type === 'purchase_order') {
+                title = 'وصل مشتريات';
+                headerColor = 'text-slate-600';
+                const s = t.settings;
+                const headers = ['البيان', s.showQuantity && 'الكمية', s.showPrice && 'سعر الوحدة', s.showPrice && 'المجموع', s.showNotes && 'ملاحظات'].filter(Boolean);
+                const itemsTbody = t.items.map(item => {
+                    const cells = [
+                        `<td class="py-2 px-4">${item.description}</td>`,
+                        s.showQuantity && `<td class="py-2 px-4 text-center">${item.quantity || ''}</td>`,
+                        s.showPrice && `<td class="py-2 px-4 text-center">${formatCurrency(item.price)}</td>`,
+                        s.showPrice && `<td class="py-2 px-4 text-center">${formatCurrency(item.total)}</td>`,
+                        s.showNotes && `<td class="py-2 px-4">${item.notes || ''}</td>`
+                    ].filter(Boolean).join('');
+                    return `<tr class="border-b">${cells}</tr>`;
+                }).join('');
+                itemsHtml = `<table class="w-full text-right mb-6"><thead class="bg-slate-50"><tr>${headers.map(h => `<th class="py-2 px-4 font-semibold text-center">${h}</th>`).join('')}</tr></thead><tbody>${itemsTbody}</tbody></table>`;
+                
+                if (s.showPrice) {
+                    footerHtml = `<div class="w-1/2"><div class="flex justify-between py-2 px-4 bg-slate-100 rounded-t-lg"><span class="font-semibold text-slate-800">المبلغ الإجمالي</span><span class="font-semibold text-slate-800">${formatCurrency(t.totalAmount)}</span></div></div>`;
+                } else {
+                    footerHtml = '';
+                }
+
+            } else { // Income and Expense
+                const isIncome = t.type === 'income';
+                title = isIncome ? 'وصل قبض' : 'وصل صرف';
+                headerColor = isIncome ? 'text-cyan-600' : 'text-rose-600';
+                itemsHtml = `<table class="w-full text-right mb-6"><thead class="bg-slate-50"><tr><th class="py-2 px-4 font-semibold">البيان</th><th class="py-2 px-4 font-semibold text-center">الكمية</th><th class="py-2 px-4 font-semibold text-center">سعر الوحدة</th><th class="py-2 px-4 font-semibold text-center">المجموع</th></tr></thead><tbody>${t.items.map(item => `<tr class="border-b"><td class="py-2 px-4">${item.description}</td><td class="py-2 px-4 text-center">${item.quantity}</td><td class="py-2 px-4 text-center">${formatCurrency(item.price)}</td><td class="py-2 px-4 text-center">${formatCurrency(item.total)}</td></tr>`).join('')}</tbody></table>`;
+                footerHtml = `<div class="w-1/2"><div class="flex justify-between py-2 px-4 bg-slate-100 rounded-t-lg"><span class="font-semibold text-slate-800">المبلغ الإجمالي</span><span class="font-semibold text-slate-800">${formatCurrency(t.totalAmount)}</span></div><div class="py-4 px-4 border-l border-r border-b rounded-b-lg"><p class="font-bold">المبلغ كتابةً:</p><p class="text-slate-600">... قيد التطوير ...</p></div><div class="mt-16 text-center"><p class="border-t pt-2 text-slate-500">توقيع المستلم</p></div></div>`;
+            }
+
+            document.getElementById('print-area').innerHTML = `
+                <header class="flex justify-between items-start pb-6 border-b-2 mb-6">
+                    <div><h1 class="text-4xl font-bold ${headerColor}">${title}</h1><p class="text-slate-500 mt-2">مرجع: ${t.id.substring(0,10)}</p></div>
+                    <div class="text-left"><p class="font-bold text-lg">حساباتي</p><p class="text-slate-600">تاريخ: ${formatDate(t.date?.toDate())}</p></div>
+                </header>
+                <div class="mb-6"><p class="text-slate-600">${t.type === 'income' ? 'مستلم من:' : (t.type === 'expense' ? 'يُصرف إلى:' : 'من:')}</p><p class="text-xl font-semibold text-slate-800">${t.partyName}</p></div>
+                ${itemsHtml}
+                <footer class="flex justify-end mt-8">${footerHtml}</footer>
+            `;
+        }
         document.getElementById('close-print-modal-btn').addEventListener('click', () => document.getElementById('print-modal').classList.add('hidden'));
 
         // --- Initial App Load ---
