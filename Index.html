@@ -161,21 +161,24 @@
     <div id="login-page" class="flex items-center justify-center h-screen bg-slate-100">
         <div class="w-full max-w-sm bg-white p-8 rounded-xl shadow-lg">
             <div class="text-center mb-8">
-                 <span class="inline-block p-3 bg-indigo-100 rounded-full">
+                <span class="inline-block p-3 bg-indigo-100 rounded-full">
                     <i data-feather="dollar-sign" class="text-indigo-600"></i>
                 </span>
-                <h1 class="text-3xl font-bold text-slate-800 mt-4">أهلاً بك</h1>
-                <p class="text-slate-500">سجل الدخول إلى نظام حساباتي</p>
+                <h1 id="auth-title" class="text-3xl font-bold text-slate-800 mt-4">أهلاً بك</h1>
+                <p id="auth-subtitle" class="text-slate-500">سجل الدخول إلى نظام حساباتي</p>
             </div>
-            <form id="login-form" class="space-y-4">
+            <form id="auth-form" class="space-y-4">
                 <div><input type="email" id="email" class="form-input" placeholder="البريد الإلكتروني" required></div>
                 <div><input type="password" id="password" class="form-input" placeholder="كلمة المرور" required></div>
                 <div id="auth-error" class="text-red-500 text-sm text-center hidden pt-2"></div>
-                <div class="pt-4 space-y-2">
-                    <button type="submit" id="login-btn" class="btn btn-primary w-full">تسجيل الدخول</button>
-                    <button type="button" id="register-btn" class="btn btn-secondary w-full">إنشاء حساب جديد</button>
+                <div class="pt-4">
+                    <button type="submit" id="auth-btn" class="btn btn-primary w-full">تسجيل الدخول</button>
                 </div>
             </form>
+            <div class="text-center mt-6 text-sm">
+                <span id="toggle-text" class="text-slate-500">هل لا تمتلك حساب؟ </span>
+                <button type="button" id="toggle-auth-mode-btn" class="font-semibold text-indigo-600 hover:text-indigo-500 focus:outline-none">إنشاء حساب جديد</button>
+            </div>
         </div>
     </div>
 
@@ -346,14 +349,13 @@
         let allDebts = [];
         let transactionsChart = null;
         let currentDebtData = {};
+        let isRegisterMode = false;
 
         // --- DOM Elements ---
         const loginPage = document.getElementById('login-page');
         const appContainer = document.getElementById('app-container');
-        const loginForm = document.getElementById('login-form');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-        const registerBtn = document.getElementById('register-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const authError = document.getElementById('auth-error');
         const pages = document.querySelectorAll('.page');
@@ -361,6 +363,13 @@
         const userEmailDisplay = document.getElementById('user-email-display');
         const confirmationModal = document.getElementById('confirmation-modal');
         const debtDetailsModal = document.getElementById('debt-details-modal');
+        // New Auth UI Elements
+        const authForm = document.getElementById('auth-form');
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const authBtn = document.getElementById('auth-btn');
+        const toggleAuthModeBtn = document.getElementById('toggle-auth-mode-btn');
+        const toggleText = document.getElementById('toggle-text');
 
         // --- Utility Functions ---
         const formatCurrency = (amount) => new Intl.NumberFormat('ar-IQ', { style: 'currency', currency: 'IQD', minimumFractionDigits: 2 }).format(amount);
@@ -390,8 +399,56 @@
             feather.replace();
         });
 
-        loginForm.addEventListener('submit', async (e) => { e.preventDefault(); authError.classList.add('hidden'); try { await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value); } catch (error) { authError.textContent = "فشل الدخول. تحقق من بياناتك."; authError.classList.remove('hidden'); } });
-        registerBtn.addEventListener('click', async () => { authError.classList.add('hidden'); if (passwordInput.value.length < 6) { authError.textContent = "كلمة المرور يجب أن تكون 6 أحرف على الأقل."; authError.classList.remove('hidden'); return; } try { await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value); } catch (error) { authError.textContent = "فشل التسجيل. قد يكون البريد مستخدماً."; authError.classList.remove('hidden'); } });
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            authError.classList.add('hidden'); // Hide any previous errors
+            authForm.reset();
+            if (isRegisterMode) {
+                authTitle.textContent = 'إنشاء حساب جديد';
+                authSubtitle.textContent = 'املأ البيانات التالية للبدء';
+                authBtn.textContent = 'إنشاء الحساب';
+                toggleText.textContent = 'هل لديك حساب بالفعل؟ ';
+                toggleAuthModeBtn.textContent = 'تسجيل الدخول';
+            } else {
+                authTitle.textContent = 'أهلاً بك';
+                authSubtitle.textContent = 'سجل الدخول إلى نظام حساباتي';
+                authBtn.textContent = 'تسجيل الدخول';
+                toggleText.textContent = 'هل لا تمتلك حساب؟ ';
+                toggleAuthModeBtn.textContent = 'إنشاء حساب جديد';
+            }
+        }
+        toggleAuthModeBtn.addEventListener('click', toggleAuthMode);
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.classList.add('hidden');
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            if (isRegisterMode) {
+                // Registration logic
+                if (password.length < 6) {
+                    authError.textContent = "كلمة المرور يجب أن تكون 6 أحرف على الأقل.";
+                    authError.classList.remove('hidden');
+                    return;
+                }
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                } catch (error) {
+                    authError.textContent = "فشل التسجيل. قد يكون البريد مستخدماً.";
+                    authError.classList.remove('hidden');
+                }
+            } else {
+                // Login logic
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } catch (error) {
+                    authError.textContent = "فشل الدخول. تحقق من بياناتك.";
+                    authError.classList.remove('hidden');
+                }
+            }
+        });
+
         logoutBtn.addEventListener('click', async () => { try { await signOut(auth); } catch (error) { console.error("Logout failed:", error); } });
 
         // --- Page/Router Logic ---
